@@ -1,0 +1,23 @@
+{
+  "name": "zuppabackend",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000Z\u0000u\u0000p\u0000p\u0000a\u0000B\u0000a\u0000c\u0000k\u0000e\u0000n\u0000d\u0000\r\u0000 \u0000",
+  "main": "server.js",
+  "type":"module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "express": "^4.19.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.5.0",
+    "nodemon":"^3.1.0",
+    "dotenv": "^16.4.5"
+
+  }
+}
