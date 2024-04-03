@@ -21,7 +21,7 @@ app.use(express.json())
 const authentication = (req,res,next)=> 
 {
 
-try {pp
+try {
   const getToken = req.header("token")
   Jwt.verify(getToken,"zuppa2525")
   next()
@@ -46,8 +46,8 @@ res.status(400).send({ message:"This user Already exists"})
 })
 
 app.post('/login', async function(req,res){
-  const {email,password} = req.body
-  const userFind = await client.db("Zuppa").collection("private").findOne({email:email})
+  const {username,password} = req.body
+  const userFind = await client.db("Zuppa").collection("private").findOne({username:username})
   
   
   if (userFind) {
@@ -56,12 +56,13 @@ app.post('/login', async function(req,res){
       if (passwordCheck) {
           const token = Jwt.sign({id:userFind._id},"zuppa2525")
           res.status(200).send({zuppa:token, message:"Successfully Login"})
+          console.log("Logged IN")
 
       } else {
           res.status(400).send({message:"Invalid Password"})
       }
   } else {
-      res.status(400).send({message:"Invalid Email id"})
+      res.status(400).send({message:"Invalid User"})
   }
 })
 
