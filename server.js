@@ -5,12 +5,16 @@ import { MongoClient, ObjectId} from "mongodb";
 import  Jwt  from "jsonwebtoken";
 import bcrypt from 'bcrypt';
 
+
+
+
 const app = express();
 const PORT = 4000;
 
 app.use(cors())
 
 const url = "mongodb+srv://jeyakesavan:jeyakesavan@cluster0.3lsv3ti.mongodb.net/?retryWrites=true&w=majority";
+// const  url="mongodb+srv://santhiya:santhiya2525@cluster0.mejii.mongodb.net/"
 const client = new MongoClient(url);
 
 await client.connect();
@@ -49,13 +53,13 @@ app.post('/login', async function(req,res){
   const {username,password} = req.body
   const userFind = await client.db("Zuppa").collection("private").findOne({username:username})
   
-  
+
   if (userFind) {
       const strongPassword = userFind.password;
       const passwordCheck = await bcrypt.compare(password,strongPassword)
       if (passwordCheck) {
           const token = Jwt.sign({id:userFind._id},"zuppa2525")
-          res.status(200).send({zuppa:token, message:"Successfully Login"})
+          res.status(200).send({zuppa:token, message:"Successfully Login",_id:userFind._id})
           console.log("Logged IN")
 
       } else {
@@ -65,9 +69,38 @@ app.post('/login', async function(req,res){
       res.status(400).send({message:"Invalid User"})
   }
 })
+//----------------------------------------- All id get --------------------------------------------------------------------
+
+app.get("/getprofile", async function(req,res) {
+  
+
+  const getMethod = await client.db("Zuppa").collection("private").find({}).toArray();
+  console.log("Successfully", getMethod);
+  res.status(200).send(getMethod);
+})
+
+
+
+
+
+//---------------------------------  Single Id -------------------------------------------------------------------
+app.get("/profileget/:singleId", async function(req,res) {
+  const {singleId} = req.params;
+
+  const getProfile = await client.db("Zuppa").collection("private").findOne({_id: new ObjectId(singleId)});
+  console.log("Successfully", getProfile);
+  res.status(200).send(getProfile);
+})
+
+
+
+
+
+
+
 
 
 
 app.listen(PORT,()=>{
-  console.log("Listenning sucessfully")
+  console.log("Listening sucessfully")
 })
