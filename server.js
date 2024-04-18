@@ -5,19 +5,24 @@ import { MongoClient, ObjectId} from "mongodb";
 import  Jwt  from "jsonwebtoken";
 import bcrypt from 'bcrypt';
 import multer from 'multer'
+import 'dotenv/config'
+
 
 const app = express();
-const PORT = 4000;
+const PORT = process.env.PORT;
 
-const url = "mongodb+srv://jeyakesavan:jeyakesavan@cluster0.3lsv3ti.mongodb.net/?retryWrites=true&w=majority";
-// const  url="mongodb+srv://santhiya:santhiya2525@cluster0.mejii.mongodb.net/"
+const URL =process.env.DB;
 
-const client = new MongoClient(url)
+
+const client = new MongoClient(URL)
 
 await client.connect();
 console.log("connected mongodb");
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+  origin:"*",
+  credentials:true
+}))
 
 const storage = multer.diskStorage({
 destination:function(req, file,cb){
@@ -40,6 +45,16 @@ try {
   res.send({message:error.message})
 }
 }
+
+
+app.post("/",(req,res)=>{
+  res.send("Server Running...")
+})
+
+
+
+
+
 
 app.post("/signup", async function(req,res){
   const {username,email,password} = req.body
