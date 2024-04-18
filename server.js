@@ -4,34 +4,13 @@ import cors from "cors"
 import { MongoClient, ObjectId} from "mongodb";
 import  Jwt  from "jsonwebtoken";
 import bcrypt from 'bcrypt';
-
-
-import https from "https"
-import fs from "fs"
-
+import multer from 'multer'
 
 const app = express();
 const PORT = 4000;
 
-app.use(express.static('public'))
-app.use(express.urlencoded({extended: true, limit: '3mb'}))
-
-app.get("/", (req, res) => res.sendFile(`${__dirname}/index.html`))
-
-app.post("/registration", (req, res) => {
-    console.log(req.body)
-    res.redirect("/")
-})
-
-const options = {
-    key: fs.readFileSync('key.pem'),
-    cert: fs.readFileSync('cert.pem')
-}
-
-app.use(cors());
 const url = "mongodb+srv://jeyakesavan:jeyakesavan@cluster0.3lsv3ti.mongodb.net/?retryWrites=true&w=majority";
-//const  url="mongodb+srv://santhiya:santhiya2525@cluster0.mejii.mongodb.net/"
-
+// const  url="mongodb+srv://santhiya:santhiya2525@cluster0.mejii.mongodb.net/"
 
 const client = new MongoClient(url)
 
@@ -40,6 +19,14 @@ console.log("connected mongodb");
 app.use(express.json())
 app.use(cors())
 
+const storage = multer.diskStorage({
+destination:function(req, file,cb){
+  return cb(null,"./public/images")
+},
+filename: function (req,file,cb){
+return cb(null, `${Date.now()}_${file.originalname}`)
+}
+})
 
 
 const authentication = (req,res,next)=> 
@@ -100,7 +87,6 @@ app.get("/getprofile", async function(req,res) {
 })
 
 
-
 //---------------------------------  Single Id -------------------------------------------------------------------
 app.get("/profileget/:singleId", async function(req,res) {
   const {singleId} = req.params;
@@ -110,6 +96,8 @@ app.get("/profileget/:singleId", async function(req,res) {
   res.status(200).send(getProfile);
 })
 
+
+
 //-----------------------------------Career Form ---------------------------------------------------
 app.post("/careerform", async function(req,res){
   const CareerForm = req.body
@@ -117,8 +105,18 @@ app.post("/careerform", async function(req,res){
   res.status(200).send("Successfully Done")
 })
 
+//-----------------------------------Resume uploaded-------------------------------
 
+const upload = multer({storage})
 
-https.createServer(options, app).listen(PORT, console.log(`server runs on port ${PORT}`))
+app.post('/upload',upload.single('file'), (req,res)=>{
+
+console.log(req.body)
+console.log(req.file)
+})
+
+app.listen(PORT,()=>{
+  console.log("Listening sucessfully",PORT)
+})
 
 
