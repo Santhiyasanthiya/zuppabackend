@@ -4,7 +4,6 @@ import cors from "cors"
 import { MongoClient, ObjectId} from "mongodb";
 import  Jwt  from "jsonwebtoken";
 import bcrypt from 'bcrypt';
-import multer from 'multer'
 import 'dotenv/config'
 
 
@@ -24,14 +23,6 @@ app.use(cors({
   credentials:true
 }))
 
-const storage = multer.diskStorage({
-destination:function(req, file,cb){
-  return cb(null,"./public/images")
-},
-filename: function (req,file,cb){
-return cb(null, `${Date.now()}_${file.originalname}`)
-}
-})
 
 
 const authentication = (req,res,next)=> 
@@ -50,9 +41,6 @@ try {
 app.post("/",(req,res)=>{
   res.send("Server Running...")
 })
-
-
-
 
 
 
@@ -120,15 +108,6 @@ app.post("/careerform", async function(req,res){
   res.status(200).send("Successfully Done")
 })
 
-//-----------------------------------Resume uploaded-------------------------------
-
-const upload = multer({storage})
-
-app.post('/upload',upload.single('file'), (req,res)=>{
-
-console.log(req.body)
-console.log(req.file)
-})
 
 app.listen(PORT,()=>{
   console.log("Listening sucessfully",PORT)
