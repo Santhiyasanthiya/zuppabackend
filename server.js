@@ -16,7 +16,7 @@ const URL =process.env.DB;
 const client = new MongoClient(URL)
 
 await client.connect();
-console.log("connected mongodb");
+console.log("connected mongodb"); 
 app.use(express.json())
 app.use(cors({
   origin:"*",
