@@ -6,20 +6,40 @@ import  Jwt  from "jsonwebtoken";
 import bcrypt from 'bcrypt';
 
 
+import https from "https"
+import fs from "fs"
 
 
 const app = express();
 const PORT = 4000;
 
-app.use(cors())
+app.use(express.static('public'))
+app.use(express.urlencoded({extended: true, limit: '3mb'}))
 
+app.get("/", (req, res) => res.sendFile(`${__dirname}/index.html`))
+
+app.post("/registration", (req, res) => {
+    console.log(req.body)
+    res.redirect("/")
+})
+
+const options = {
+    key: fs.readFileSync('key.pem'),
+    cert: fs.readFileSync('cert.pem')
+}
+
+app.use(cors());
 const url = "mongodb+srv://jeyakesavan:jeyakesavan@cluster0.3lsv3ti.mongodb.net/?retryWrites=true&w=majority";
-// const  url="mongodb+srv://santhiya:santhiya2525@cluster0.mejii.mongodb.net/"
-const client = new MongoClient(url);
+//const  url="mongodb+srv://santhiya:santhiya2525@cluster0.mejii.mongodb.net/"
+
+
+const client = new MongoClient(url)
 
 await client.connect();
 console.log("connected mongodb");
 app.use(express.json())
+app.use(cors())
+
 
 
 const authentication = (req,res,next)=> 
@@ -81,8 +101,6 @@ app.get("/getprofile", async function(req,res) {
 
 
 
-
-
 //---------------------------------  Single Id -------------------------------------------------------------------
 app.get("/profileget/:singleId", async function(req,res) {
   const {singleId} = req.params;
@@ -92,15 +110,15 @@ app.get("/profileget/:singleId", async function(req,res) {
   res.status(200).send(getProfile);
 })
 
-
-
-
-
-
-
-
-
-
-app.listen(PORT,()=>{
-  console.log("Listening sucessfully")
+//-----------------------------------Career Form ---------------------------------------------------
+app.post("/careerform", async function(req,res){
+  const CareerForm = req.body
+  const CareerPost = await client.db("Zuppa").collection("Collection").insertMany([CareerForm])
+  res.status(200).send("Successfully Done")
 })
+
+
+
+https.createServer(options, app).listen(PORT, console.log(`server runs on port ${PORT}`))
+
+
