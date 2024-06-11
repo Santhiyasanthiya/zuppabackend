@@ -9,6 +9,8 @@ import bcrypt from 'bcrypt';
 import multer from 'multer';
 import nodemailer from "nodemailer";
 import 'dotenv/config';
+import https from 'https';
+import fs from 'fs';
 
 const app = express();
 const PORT = process.env.PORT;
