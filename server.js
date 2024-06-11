@@ -1,5 +1,6 @@
 
 
+
 import express from "express";
 import cors from "cors";
 import { MongoClient, ObjectId } from "mongodb";
@@ -8,17 +9,6 @@ import bcrypt from 'bcrypt';
 import multer from 'multer';
 import nodemailer from "nodemailer";
 import 'dotenv/config';
-import https from 'https';
-import fs from 'fs';
-
-    
-var key = fs.readFileSync('/etc/letsencrypt/live/shop.zuppa.io/privkey.pem');
-var cert = fs.readFileSync('/etc/letsencrypt/live/shop.zuppa.io/cert.pem');
-var options = {
-  key: key,
-  cert: cert
-};
-
 
 const app = express();
 const PORT = process.env.PORT;
@@ -30,6 +20,15 @@ console.log("Connected to MongoDB");
 
 app.use(express.json());
 app.use(cors({ origin: "*", credentials: true }));
+
+
+    
+var key = fs.readFileSync('/etc/letsencrypt/live/shop.zuppa.io/privkey.pem');
+var cert = fs.readFileSync('/etc/letsencrypt/live/shop.zuppa.io/cert.pem');
+var options = {
+  key: key,
+  cert: cert
+};
 
 
 const storage = multer.diskStorage({
@@ -52,7 +51,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-//---------------------- Authentication middleware--------------------------
+//---------------------------------------- Authentication middleware--------------------------
 const authentication = (req, res, next) => {
   try {
     const getToken = req.header("token");
@@ -63,23 +62,84 @@ const authentication = (req, res, next) => {
   }
 };
 
+//---------------------- ---------------- Server Running... ---------------------------------------------------------------
+
 app.post("/", (req, res) => {
   res.send("Server Running...");
 });
+//------------------------------------------ signup Register form ---------------------------------------------------------------------------
 
 app.post("/signup", async function(req, res) {
   const { username, email, password } = req.body;
-  const finduser = await client.db("Zuppa").collection("private").findOne({ email: email });
+  try {
+   
+    await client.connect();
+    console.log("Connected to the database");
 
-  if (finduser) {
-    res.status(400).send({ message: "This user Already exists" });
-  } else {
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    const postSignin = await client.db("Zuppa").collection("private").insertOne({ username: username, email: email, password: hashedPassword });
-    res.status(200).send({ postSignin, message: "Successfully Register" });
+    const finduser = await client.db("Zuppa").collection("private").findOne({ email: email });
+    console.log("User lookup complete:", finduser);
+
+    if (finduser) {
+    
+      return res.status(400).send({ message: "This user Already exists" });
+    } else {
+    
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      console.log("Password hashed successfully");
+
+      let postSignin;
+      try {
+        postSignin = await client.db("Zuppa").collection("private").insertOne({
+          username: username,
+          email: email,
+          password: hashedPassword,
+        });
+        console.log("User creation result:", postSignin);
+      } catch (insertError) {
+        console.error("Insertion error:", insertError);
+        return res.status(500).json({ statusCode: 500, message: 'Error during registration', error: insertError.message });
+      }
+
+      if (postSignin.acknowledged) {
+        const url = `http://localhost:3000/Login`;
+        const details = {
+          from: process.env.EMAIL,
+          to: email,
+          subject: ' Thank You for Registering with [Welcome To Zuppa Geo Navigation]',
+          html: `<div>
+                  <p>Dear "${email}"</p>
+                  <p>We genuinely appreciate your trust and confidence in us.</p>
+                   <a href="${url}">Login here</a>
+                 
+                 </div>`,
+        };
+
+        console.log("Sending email...");
+        try {
+          await transporter.sendMail(details);
+          console.log("Email sent successfully");
+          return res.json({ statusCode: 200, message: 'Registered Your Mail' });
+        } catch (emailError) {
+          console.error("Email sending error:", emailError);
+          return res.status(500).json({ statusCode: 500, message: 'Error sending email', error: emailError.message });
+        }
+      } else {
+        console.error("Error during registration: insertion acknowledged but not confirmed");
+        return res.status(500).json({ statusCode: 500, message: 'Error during registration' });
+      }
+    }
+  } catch (error) {
+    console.error("Error occurred:", error);
+    return res.status(500).json({ statusCode: 500, message: 'Internal Server Error', error: error.message });
+  } finally {
+    console.log("Closing the database connection...");
+    await client.close();
+    console.log("Database connection closed");
   }
 });
+
+//------------------------------------------ Login  ---------------------------------------------------------------------------
 
 app.post('/login', async function(req, res) {
   const { email, password } = req.body;
@@ -100,11 +160,15 @@ app.post('/login', async function(req, res) {
   }
 });
 
+//------------------------------------------ GetProfile ---------------------------------------------------------------------------
+
 app.get("/getprofile", async function(req, res) {
   const getMethod = await client.db("Zuppa").collection("private").find({}).toArray();
   console.log("Successfully", getMethod);
   res.status(200).send(getMethod);
 });
+
+//------------------------------------------ GetProfileSingleId ---------------------------------------------------------------------------
 
 app.get("/profileget/:singleId", async function(req, res) {
   const { singleId } = req.params;
@@ -113,14 +177,77 @@ app.get("/profileget/:singleId", async function(req, res) {
   res.status(200).send(getProfile);
 });
 
+//------------------------------------------ CareerForm and uploadFile also ---------------------------------------------------------------------------
+
+
+// app.post('/careerform', upload.single('resume'), async (req, res) => {
+//   const { name, email, contactNumber, education, portfolio, location, passOut } = req.body;
+//   const resumePath = req.file.path;
+//   const CareerPost = await client.db("Zuppa").collection("Collection").insertOne({resumePath,name, email, contactNumber, education, portfolio, location, passOut});
+//   res.status(200).send(CareerPost).json({ message: 'Form submitted successfully' });
+// });
+
+
+
 app.post('/careerform', upload.single('resume'), async (req, res) => {
   const { name, email, contactNumber, education, portfolio, location, passOut } = req.body;
   const resumePath = req.file.path;
-  const CareerPost = await client.db("Zuppa").collection("Collection").insertOne({resumePath,name, email, contactNumber, education, portfolio, location, passOut});
-  res.status(200).send(CareerPost).json({ message: 'Form submitted successfully' });
+
+  try {
+    const CareerPost = await client.db("Zuppa").collection("Collection").insertOne({
+      resumePath,
+      name,
+      email,
+      contactNumber,
+      education,
+      portfolio,
+      location,
+      passOut
+    });
+console.log(CareerPost)
+    
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: 'hr-executive@zuppa.io',
+      subject: 'New Career Form Submission',
+      html: `<div>
+      A new career form has been submitted by ${name}.
+       <p>contact Number : ${contactNumber}</p>
+       <p>Education: ${education}</p>
+       <p>PortfolioLink : ${portfolio}</p>
+       <p>Location: ${location}</p>
+          <p>Passout:${passOut}</p> </div>`,
+      attachments: [
+        {
+          filename: req.file.originalname,
+          path: resumePath,
+        },
+      ],
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log(error);
+        return res.status(500).send({ message: 'Error sending email' });
+      } else {
+        console.log('Email sent: ' + info.response);
+        return res.status(200).json({ message: 'Form submitted successfully and email sent' });
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Error submitting form' });
+  }
 });
 
 
+
+
+
+
+
+//------------------------------------------ Forgot Password ---------------------------------------------------------------------------
 
 app.post('/forgotpassword', async (req, res) => {
   try {
@@ -128,7 +255,7 @@ app.post('/forgotpassword', async (req, res) => {
     const userFind = await client.db("Zuppa").collection("private").findOne({ email });
 
     if (userFind) {
-      const token = Jwt.sign({ id: userFind._id }, process.env.SECRETKEY, { expiresIn: '10m' });
+      const token = Jwt.sign({ id: userFind._id }, process.env.SECRETKEY, { expiresIn: '5m' });
       const url = `${process.env.BASE_URL}/resetpassword/${userFind._id}/${token}`;
 
       const details = {
@@ -158,7 +285,7 @@ app.post('/forgotpassword', async (req, res) => {
   }
 });
 
-// Reset Password Route
+//----------------------------------- Reset Password Route ------------------------------------------
 app.post('/resetpassword/:id/:token', async (req, res) => {
   try {
     const { id, token, password } = req.body;
@@ -177,13 +304,16 @@ app.post('/resetpassword/:id/:token', async (req, res) => {
     const hashed = await bcrypt.hash(password, salt);
 
     const userUpdate = await client.db("Zuppa").collection("private").updateOne({ _id: new ObjectId(id) }, { $set: { password: hashed } });
-
+console.log(userUpdate)
     res.json({ statusCode: 200, message: 'Password reset successfully' });
   } catch (error) {
     console.error(error);
     res.json({ statusCode: 500, message: 'Internal Server Error', error });
   }
 });
+
+//------------------------------------------ contact ---------------------------------------------------------------------------
+
 
 app.post('/api/contact', async (req, res) => {
   const { name, email, subject, message} = req.body;
@@ -209,13 +339,16 @@ app.post('/api/contact', async (req, res) => {
       // from: process.env.EMAIL,
       to: email,
       subject: 'Thank You for Contacting Us',
-      html: `<p>Dear ${name},</p>
-             <p>Thank you for reaching out to us. We have received your message and will get back to you shortly.</p>
+      html: `<h4>Dear ${name},</h4>
+             <p>Thank you for reaching out to us. </p>
+             <p>We have received your message and will get back to you shortly.</p>
              <p>Best regards,</p>
-             <p>Zuppa Geo Navigation 🛸</p>
-             <p>9952081655</p>
+             <h3 style="color: darkorange;">Zuppa Geo Navigation</h3>
+             <h5>Contact No: 9952081655</h5>
              <h5>Address : </h5>
-             <p>Polyhose Tower No.86, West Wing, 4th Floor Anna Salai, Guindy, Chennai, Tamil Nadu-600032</p>
+             <p>Polyhose Tower No.86, West Wing, </p>
+             <p>4th Floor Anna Salai, Guindy, </p>
+             <p>Chennai, Tamil Nadu-600032</p>
              <p>Email :askme@zuppa.io</p>
              `
     };
@@ -228,6 +361,7 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
+//------------------------------------------ appListen ---------------------------------------------------------------------------
 
 // app.listen(PORT, () => {
 //   console.log("Listening successfully on port", PORT);
