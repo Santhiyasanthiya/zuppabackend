@@ -73,9 +73,14 @@ const authentication = (req, res, next) => {
 //---------------------- ---------------- Server Running... ---------------------------------------------------------------
 
 app.post("/", (req, res) => {
-  res.send("Server Running...");
+  res.send("Server Running...")
+  ;
 });
 
+app.get("/", (req, res) => {
+  res.send("Zuppa Server Running...")
+  ;
+});
 
 
 //---------------------- ---------------- Server Running... ---------------------------------------------------------------
