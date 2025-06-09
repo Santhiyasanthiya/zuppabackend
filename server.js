@@ -816,7 +816,9 @@ app.post('/api/chatbot', async (req, res) => {
 });
 
 
-//------------------------------- Software Download API --------------------------------------------------------
+//-------------------------------android Software Download API --------------------------------------------------------
+
+
 
 
 
@@ -827,16 +829,20 @@ app.post("/api/software-download", async (req, res) => {
     const db = client.db("Zuppa");
     const collection = db.collection("softwareDownloads");
 
+    // Hash the phone number as password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(phoneNumber, salt);
+
     // Save to DB
     await collection.insertOne({
       username,
-      emailid,
-      phoneNumber,
+      email: emailid,
+      password: hashedPassword,
       aadharNumber,
       date: new Date()
     });
 
-    // Email to Admin
+    // Email to Admin and User (unchanged logic below)
     const adminMail = {
       from: process.env.EMAIL,
       to: "santhiya30032@gmail.com",
@@ -844,7 +850,7 @@ app.post("/api/software-download", async (req, res) => {
       html: `
         <div>
           <h3 style="color: orange;">New Download Registration</h3>
-             <h4><strong> Zuppa Disha app Downloaded </strong></h4>
+          <h4><strong> Zuppa Disha app Downloaded </strong></h4>
           <p><strong>Name:</strong> ${username}</p>
           <p><strong>Email:</strong> ${emailid}</p>
           <p><strong>Phone:</strong> ${phoneNumber}</p>
@@ -853,34 +859,28 @@ app.post("/api/software-download", async (req, res) => {
       `,
     };
 
-    // Email to User
     const userMail = {
       from: process.env.EMAIL,
       to: emailid,
       subject: "Your Software Download from Zuppa",
       html: `
-                 <div style="display: flex; justify-content:center; align-items: center;">
-            
-                <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
+        <div style="display: flex; justify-content:center; align-items: center;">
+          <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
         </div> 
         <div style="padding: 20px; font-family: Arial, sans-serif;">
-    
           <h2 style="color: orange;">Thank You for Registering!</h2>
           <p>Hello <strong>${username || 'User'}</strong>,</p>
           <p>Thank you for your interest. You can download your software using the link below:</p>
-          <p style="margin-top: 10px;">
-            <strong>Download Link:</strong><br/>
+          <p><strong>Download Link:</strong><br/>
             <a href="https://drive.google.com/file/d/1JVzYVPGmNM3np9-KOgF01fI4GVa974UK/view?usp=sharing" target="_blank">
-              https://drive.google.com/file/d/1JVzYVPGmNM3np9-KOgF01fI4GVa974UK/view?usp=sharing
+              Download Software
             </a>
           </p>
-     <div style="border: 2px dashed #ffa500; padding: 15px; margin-top: 20px; border-radius: 10px; background-color: #fff8e1;">
-  <h3 style="color: #ff6f00; margin-bottom: 10px;">📲 Your Android Registration Details</h3>
-  <p style="font-size: 16px; margin: 5px 0;"><strong>Username:</strong> ${emailid}</p>
-  <p style="font-size: 16px; margin: 5px 0;"><strong>Password:</strong> ${phoneNumber}</p>
-</div>
-
-
+          <div style="border: 2px dashed #ffa500; padding: 15px; margin-top: 20px; border-radius: 10px; background-color: #fff8e1;">
+            <h3 style="color: #ff6f00;">📲 Your Android Registration Details</h3>
+            <p><strong>Username:</strong> ${emailid}</p>
+            <p><strong>Password:</strong> ${phoneNumber}</p>
+          </div>
           <p style="margin-top: 20px;">If you need help, contact <strong>askme@zuppa.io</strong></p>
           <p>Best regards,</p>
           <h4 style="color: darkorange;">Team Zuppa Geo Navigation</h4>
@@ -901,8 +901,46 @@ app.post("/api/software-download", async (req, res) => {
 
 
 
+//-------------------------------android login Download API --------------------------------------------------------
 
 
+
+
+
+app.post("/api/software-download-login", async function (req, res) {
+  const { email, password } = req.body;
+
+  try {
+    const userFind = await client
+      .db("Zuppa")
+      .collection("softwareDownloads")
+      .findOne({ email });
+
+    if (userFind) {
+      const passwordCheck = await bcrypt.compare(password, userFind.password);
+      if (passwordCheck) {
+        const token = await Jwt.sign(
+          { id: userFind._id },
+          process.env.SECRETKEY
+        );
+        res.status(200).send({
+          zuppa: token,
+          message: "Successfully Login",
+          _id: userFind._id,
+          username: userFind.username,
+        });
+        console.log("Logged IN");
+      } else {
+        res.status(400).send({ message: "Invalid Password" });
+      }
+    } else {
+      res.status(400).send({ message: "Invalid Email" });
+    }
+  } catch (err) {
+    console.error("Login Error:", err);
+    res.status(500).send({ message: "Server Error", error: err.message });
+  }
+});
 
 // ====================== OTP SEND AND VERIFY Email ===========================================================
 
@@ -955,19 +993,6 @@ app.post("/api/verify-otp", async (req, res) => {
 });
 
 
-// ====================== OTP SEND AND VERIFY  Phone Number===========================================================
-
-// app.post("/api/verify-phone-otp", async (req, res) => {
-//   const { phone, otp } = req.body;
-//   const validOtp = phoneOtpMap.get(phone);
-
-//   if (parseInt(otp) === validOtp) {
-//     phoneOtpMap.delete(phone);
-//     res.status(200).json({ verified: true, message: "Phone OTP verified" });
-//   } else {
-//     res.status(400).json({ verified: false, message: "Invalid OTP" });
-//   }
-// });
 
 
 
