@@ -820,8 +820,6 @@ app.post('/api/chatbot', async (req, res) => {
 
 
 
-
-
 app.post("/api/software-download", async (req, res) => {
   const { username, emailid, phoneNumber, aadharNumber } = req.body;
 
@@ -834,13 +832,13 @@ app.post("/api/software-download", async (req, res) => {
     const hashedPassword = await bcrypt.hash(phoneNumber, salt);
 
     // Save to DB
-    await collection.insertOne({
-      username,
-      email: emailid,
-      password: hashedPassword,
-      aadharNumber,
-      date: new Date()
-    });
+  await collection.insertOne({
+  username,
+  email: emailid,
+  password: hashedPassword,
+  aadharNumber,
+  registerDate: new Date(),  // This stores registration date and time
+});
 
     // Email to Admin and User (unchanged logic below)
     const adminMail = {
@@ -900,36 +898,46 @@ app.post("/api/software-download", async (req, res) => {
 
 
 
-
 //-------------------------------android login Download API --------------------------------------------------------
-
-
-
 
 
 app.post("/api/software-download-login", async function (req, res) {
   const { email, password } = req.body;
 
   try {
-    const userFind = await client
-      .db("Zuppa")
-      .collection("softwareDownloads")
-      .findOne({ email });
+    const db = client.db("Zuppa");
+    const collection = db.collection("softwareDownloads");
+
+    // Find user by email
+    const userFind = await collection.findOne({ email });
 
     if (userFind) {
+      // Compare hashed password
       const passwordCheck = await bcrypt.compare(password, userFind.password);
       if (passwordCheck) {
+        // Generate JWT token
         const token = await Jwt.sign(
           { id: userFind._id },
           process.env.SECRETKEY
         );
+
+        // Save current login timestamp
+        const loginTime = new Date();
+        await collection.updateOne(
+          { _id: userFind._id },
+          { $set: { lastLogin: loginTime } }
+        );
+
+        // Send response
         res.status(200).send({
           zuppa: token,
           message: "Successfully Login",
           _id: userFind._id,
           username: userFind.username,
+          loginTime: loginTime.toLocaleString(), // optional
         });
-        console.log("Logged IN");
+
+        console.log(`✅ ${userFind.username} logged in at ${loginTime.toLocaleString()}`);
       } else {
         res.status(400).send({ message: "Invalid Password" });
       }
@@ -941,6 +949,7 @@ app.post("/api/software-download-login", async function (req, res) {
     res.status(500).send({ message: "Server Error", error: err.message });
   }
 });
+
 
 // ====================== OTP SEND AND VERIFY Email ===========================================================
 
