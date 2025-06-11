@@ -843,7 +843,7 @@ app.post("/api/software-download", async (req, res) => {
     // Email to Admin and User (unchanged logic below)
     const adminMail = {
       from: process.env.EMAIL,
-      to: "santhiya30032@gmail.com",
+      to: "noreplyzuppa@gmail.com",
       subject: "New Software Download Request",
       html: `
         <div>
