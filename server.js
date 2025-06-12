@@ -409,7 +409,8 @@ app.post("/api/contact", async (req, res) => {
     // Send email to admin
     const adminMailOptions = {
       from: process.env.EMAIL,
-      to: "askme@zuppa.io",
+      // to: "askme@zuppa.io",
+         to: "santhiya30032@gmail.com",
       subject: "New Contact Form Submission",
       html: `
       <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
@@ -421,7 +422,8 @@ app.post("/api/contact", async (req, res) => {
         <ul style="list-style-type: none; padding: 0;">
                 <br/>
                 <li style="display: flex; align-items: center;"> 
-                  <p>You have received a new message from <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412385/fjurbddsghxmmuyynylt.webp" alt="Email" style="width: 16px; margin-right: 8px;">
+                  <p>You have received a new message from <img src="00
+                  " alt="Email" style="width: 16px; margin-right: 8px;">
                     <strong><a href="mailto:${email}">${email}</a></strong>
                   </p>
                 </li>
