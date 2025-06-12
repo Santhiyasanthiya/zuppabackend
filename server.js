@@ -1003,8 +1003,20 @@ app.post("/api/verify-otp", async (req, res) => {
   }
 });
 
+// ----------------------   aadhar verify  ---------------
 
+app.post("/api/verify-aadhar", async (req, res) => {
+  const { aadhar } = req.body;
 
+  // Basic Aadhaar validation (you can integrate real UIDAI API later)
+  const isValid = /^\d{12}$/.test(aadhar);
+
+  if (isValid) {
+    res.status(200).json({ valid: true, message: "Valid Aadhaar number" });
+  } else {
+    res.status(400).json({ valid: false, message: "Invalid Aadhaar number" });
+  }
+});
 
 
 app.listen(PORT, () => {
