@@ -284,8 +284,8 @@ app.post("/careerform", upload.single("resume"), async (req, res) => {
 
     const mailOptions = {
       from: process.env.EMAIL,
-      // to: 'hr-executive@zuppa.io',
-      to: "santhiya30032@gmail.com",
+      to: 'hr-executive@zuppa.io',
+ 
       subject: "New Career Form Submission",
       html: `<div>
       A new career form has been submitted by ${name}.
@@ -409,8 +409,8 @@ app.post("/api/contact", async (req, res) => {
     // Send email to admin
     const adminMailOptions = {
       from: process.env.EMAIL,
-      // to: "askme@zuppa.io",
-         to: "santhiya30032@gmail.com",
+      to: "askme@zuppa.io",
+   
       subject: "New Contact Form Submission",
       html: `
       <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
@@ -845,7 +845,8 @@ app.post("/api/software-download", async (req, res) => {
     // Email to Admin and User (unchanged logic below)
     const adminMail = {
       from: process.env.EMAIL,
-      to: "noreplyzuppa@gmail.com",
+        to: "santhiya30032@gmail.com",
+      // to: "noreplyzuppa@gmail.com",
       subject: "New Software Download Request",
       html: `
         <div>
