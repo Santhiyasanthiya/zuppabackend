@@ -845,8 +845,8 @@ app.post("/api/software-download", async (req, res) => {
     // Email to Admin and User (unchanged logic below)
     const adminMail = {
       from: process.env.EMAIL,
-        to: "santhiya30032@gmail.com",
-      // to: "noreplyzuppa@gmail.com",
+        // to: "santhiya30032@gmail.com",
+      to: "noreplyzuppa@gmail.com",
       subject: "New Software Download Request",
       html: `
         <div>
@@ -1006,11 +1006,45 @@ app.post("/api/verify-otp", async (req, res) => {
 
 // ----------------------   aadhar verify  ---------------
 
-app.post("/api/verify-aadhar", async (req, res) => {
+app.post("/api/verify-aadhar", (req, res) => {
   const { aadhar } = req.body;
 
-  // Basic Aadhaar validation (you can integrate real UIDAI API later)
-  const isValid = /^\d{12}$/.test(aadhar);
+  function validateVerhoeff(num) {
+    const d = [
+      [0,1,2,3,4,5,6,7,8,9],
+      [1,2,3,4,0,6,7,8,9,5],
+      [2,3,4,0,1,7,8,9,5,6],
+      [3,4,0,1,2,8,9,5,6,7],
+      [4,0,1,2,3,9,5,6,7,8],
+      [5,9,8,7,6,0,4,3,2,1],
+      [6,5,9,8,7,1,0,4,3,2],
+      [7,6,5,9,8,2,1,0,4,3],
+      [8,7,6,5,9,3,2,1,0,4],
+      [9,8,7,6,5,4,3,2,1,0]
+    ];
+    const p = [
+      [0,1,2,3,4,5,6,7,8,9],
+      [1,5,7,6,2,8,3,0,9,4],
+      [5,8,0,3,7,9,6,1,4,2],
+      [8,9,1,6,0,4,3,5,2,7],
+      [9,4,5,3,1,2,6,8,7,0],
+      [4,2,8,6,5,7,3,9,0,1],
+      [2,7,9,3,8,0,6,4,1,5],
+      [7,0,4,6,9,1,3,2,5,8]
+    ];
+    const inv = [0,4,3,2,1,5,6,7,8,9];
+
+    let c = 0;
+    const myArray = num.split("").reverse().map(x => parseInt(x));
+    for (let i = 0; i < myArray.length; i++) {
+      c = d[c][p[i % 8][myArray[i]]];
+    }
+
+    return c === 0;
+  }
+
+  const is12Digits = /^\d{12}$/.test(aadhar);
+  const isValid = is12Digits && validateVerhoeff(aadhar);
 
   if (isValid) {
     res.status(200).json({ valid: true, message: "Valid Aadhaar number" });
