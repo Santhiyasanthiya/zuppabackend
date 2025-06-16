@@ -898,6 +898,13 @@ app.post("/api/software-download", async (req, res) => {
   }
 });
 
+app.post("/api/check-email", async (req, res) => {
+  const { email } = req.body;
+  const exists = await client.db("Zuppa")
+                    .collection("softwareDownloads")
+                    .findOne({ email });
+  res.json({ available: !exists });
+});
 
 
 //-------------------------------android login Download API --------------------------------------------------------
