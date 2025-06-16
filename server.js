@@ -829,34 +829,36 @@ app.post("/api/software-download", async (req, res) => {
     const db = client.db("Zuppa");
     const collection = db.collection("softwareDownloads");
 
-    // Hash the phone number as password
+    // 1⃣  Duplicate‑email check
+    const existing = await collection.findOne({ email: emailid });
+    if (existing) {
+      return res.status(400).json({ message: "Email already registered" });
+    }
+
+    // 2⃣  Hash the phone as password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(phoneNumber, salt);
 
-    // Save to DB
-  await collection.insertOne({
-  username,
-  email: emailid,
-  password: hashedPassword,
-  aadharNumber,
-  registerDate: new Date(),  // This stores registration date and time
-});
+    // 3⃣  Save user
+    await collection.insertOne({
+      username,
+      email: emailid,
+      password: hashedPassword,
+      aadharNumber,
+      registerDate: new Date(),
+    });
 
-    // Email to Admin and User (unchanged logic below)
+    // 4⃣  Prepare emails  (⟵ moved up)
     const adminMail = {
       from: process.env.EMAIL,
-        // to: "santhiya30032@gmail.com",
       to: "noreplyzuppa@gmail.com",
       subject: "New Software Download Request",
       html: `
-        <div>
-          <h3 style="color: orange;">New Download Registration</h3>
-          <h4><strong> Zuppa Disha app Downloaded </strong></h4>
-          <p><strong>Name:</strong> ${username}</p>
-          <p><strong>Email:</strong> ${emailid}</p>
-          <p><strong>Phone:</strong> ${phoneNumber}</p>
-          <p><strong>Aadhar:</strong> ${aadharNumber}</p>
-        </div>
+        <h3 style="color:orange;">New Download Registration</h3>
+        <p><strong>Name:</strong> ${username}</p>
+        <p><strong>Email:</strong> ${emailid}</p>
+        <p><strong>Phone:</strong> ${phoneNumber}</p>
+        <p><strong>Aadhaar:</strong> ${aadharNumber}</p>
       `,
     };
 
@@ -865,37 +867,34 @@ app.post("/api/software-download", async (req, res) => {
       to: emailid,
       subject: "Your Software Download from Zuppa",
       html: `
-        <div style="display: flex; justify-content:center; align-items: center;">
-          <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
-        </div> 
-        <div style="padding: 20px; font-family: Arial, sans-serif;">
-          <h2 style="color: orange;">Thank You for Registering!</h2>
-          <p>Hello <strong>${username || 'User'}</strong>,</p>
-          <p>Thank you for your interest. You can download your software using the link below:</p>
-          <p><strong>Download Link:</strong><br/>
-            <a href="https://drive.google.com/file/d/1JVzYVPGmNM3np9-KOgF01fI4GVa974UK/view?usp=sharing" target="_blank">
-              Download Software
-            </a>
-          </p>
-          <div style="border: 2px dashed #ffa500; padding: 15px; margin-top: 20px; border-radius: 10px; background-color: #fff8e1;">
-            <h3 style="color: #ff6f00;">📲 Your Android Registration Details</h3>
-            <p><strong>Username:</strong> ${emailid}</p>
-            <p><strong>Password:</strong> ${phoneNumber}</p>
-          </div>
-          <p style="margin-top: 20px;">If you need help, contact <strong>askme@zuppa.io</strong></p>
-          <p>Best regards,</p>
-          <h4 style="color: darkorange;">Team Zuppa Geo Navigation</h4>
+        <div style="text-align:center">
+          <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif"
+               width="110" height="100" alt="Zuppa Logo"/>
         </div>
+        <h2 style="color:orange;">Thank You for Registering!</h2>
+        <p>Hello <strong>${username || "User"}</strong>,</p>
+        <p>You can download the software here:</p>
+        <p><a href="https://drive.google.com/file/d/1JVzYVPGmNM3np9-KOgF01fI4GVa974UK/view?usp=sharing" target="_blank">
+             Download Software
+           </a></p>
+        <div style="border:2px dashed #ffa500;padding:15px;border-radius:10px;background:#fff8e1;">
+          <h3 style="color:#ff6f00;">📲  Your Android Registration Details</h3>
+          <p><strong>Username:</strong> ${emailid}</p>
+          <p><strong>Password:</strong> ${phoneNumber}</p>
+        </div>
+        <p style="margin-top:20px;">Need help?  askme@zuppa.io</p>
+        <p><strong>Team Zuppa Geo Navigation</strong></p>
       `,
     };
 
+    // 5⃣  Send emails once
     await transporter.sendMail(adminMail);
     await transporter.sendMail(userMail);
 
     res.status(200).json({ message: "Registration and email sent successfully." });
-  } catch (error) {
-    console.error("Error in software download API:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+  } catch (err) {
+    console.error("Error in software‑download API:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
