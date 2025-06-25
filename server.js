@@ -397,98 +397,224 @@ app.post("/careerform", upload.single("resume"), async (req, res) => {
 
 //------------------------------------------ contact ---------------------------------------------------------------------------
 
-app.post("/api/contact", async (req, res) => {
-  const { name, email, subject, message, phone } = req.body;  // Added phone to the request body
+// app.post("/api/contact", async (req, res) => {
+//   const { name, email, subject, message, phone } = req.body;  // Added phone to the request body
   
+//   try {
+//     const newContact = await client
+//       .db("Zuppa")
+//       .collection("contact")
+//       .insertOne({ name, email, subject, message, phone });  // Store phone number in the database
+
+//     // Send email to admin
+//     const adminMailOptions = {
+//       from: process.env.EMAIL,
+//       to: "askme@zuppa.io",
+   
+//       subject: "New Contact Form Submission",
+//       html: `
+//       <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
+//         <div style="display: flex; justify-content: space-between; align-items: center;">
+//                 <h2 style="color: orange; margin: 0;">New Contact Form Submission</h2>
+//                 <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
+//         </div> 
+
+//         <ul style="list-style-type: none; padding: 0;">
+//                 <br/>
+//                 <li style="display: flex; align-items: center;"> 
+//                   <p>You have received a new message from <img src="00
+//                   " alt="Email" style="width: 16px; margin-right: 8px;">
+//                     <strong><a href="mailto:${email}">${email}</a></strong>
+//                   </p>
+//                 </li>
+//                 <br/>
+//                 <li style="display: flex; align-items: center;"> <p><strong>Subject:</strong> ${subject}</p></li>
+//                 <br/>
+//                 <li style="display: flex; align-items: center;"><p><strong>Name:</strong> ${name}</p></li>
+//                 <br/>
+//               <li style="display: flex; align-items: center;"> 
+//               <p> <strong>Phone Number:</strong> ${phone} </p>
+//               </li>
+//                 <br/>
+//                 <li style="display: flex; align-items: center;"> <p><strong>Message:</strong> ${message}</p></li>
+//                 <br/>
+//         </ul>
+//       </div>
+//       `,
+//     };
+
+//     await transporter.sendMail(adminMailOptions);
+
+//     // Send acknowledgment email to user from no-reply address
+//     const userMailOptions = {
+//       from: process.env.EMAIL,
+//       to: email,
+//       subject: "Thank You for Contacting Us",
+//       html: `
+//       <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
+//         <div style="display: flex; justify-content: space-between; align-items: center;">
+//                 <h2 style="color: orange; margin: 0;">Thank You for Contacting Us</h2>
+//                 <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
+//         </div>
+//         <h4>Dear ${name},</h4>
+//         <p>Thank you for reaching out to us.</p>
+//         <p>We have received your message and will get back to you shortly.</p>
+//         <ul style="list-style-type: none; padding: 0;">
+//                 <br/>
+//                 <li style="display: flex; align-items: center;">
+//                   <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412385/fjurbddsghxmmuyynylt.webp" alt="Email" style="width: 16px; margin-right: 8px;">Sales Support: <strong><a href="mailto:askme@zuppa.io">askme@zuppa.io</a>  </strong>
+//                 </li>
+//                 <br/>
+//                 <li style="display: flex; align-items: center;">
+//                   <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412386/t4ca5vpzjwhjol4vg0mj.png" alt="Phone" style="width: 16px; margin-right: 8px;">Phone Number: <strong><a href="tel:+91 9952081655">9952081655</a></strong>
+//                 </li>
+//                 <br/>
+//         </ul>
+//         <p>Best regards,</p>
+//         <h3 style="color: darkorange;">Zuppa Geo Navigation</h3>
+//         <p><strong>Address:</strong></p>
+//         <p>Polyhose Tower No.86, West Wing</p>
+//         <p>4th Floor Anna Salai, Guindy</p>
+//         <p>Chennai, Tamil Nadu-600032</p> 
+//       </div>
+//       `,
+//     };
+
+//     await transporter.sendMail(userMailOptions);
+
+//     res.status(201).send({
+//       message: "Form submitted and acknowledgment email sent successfully",
+//     });
+//   } catch (error) {
+//     res.status(400).send({ error: error.message });
+//   }
+// });
+
+
+/* ------------------------------------------------------------------
+   /api/contact  |  POST
+   ------------------------------------------------------------------ */
+app.post("/api/contact", async (req, res) => {
+  const {
+    name,
+    email,
+    phone,
+    state,
+    district,
+    pin,
+    subject,
+    message,
+  } = req.body;
+
+  /* ----------  1. Simple validation ---------- */
+  const errors = [];
+  if (!name) errors.push("name");
+  if (!email) errors.push("email");
+  if (!phone) errors.push("phone");
+  if (!state) errors.push("state");
+  if (!district) errors.push("district");
+  if (!pin) errors.push("pin");
+  if (!subject) errors.push("subject");
+  if (!message) errors.push("message");
+
+  if (errors.length)
+    return res
+      .status(400)
+      .json({ error: `Missing or empty: ${errors.join(", ")}` });
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return res.status(400).json({ error: "Invalid e-mail format" });
+
+  if (!/^\d{10}$/.test(phone))
+    return res.status(400).json({ error: "Phone must be 10 digits" });
+
+  if (!/^\d{6}$/.test(pin))
+    return res.status(400).json({ error: "PIN must be 6 digits" });
+
+  /* ----------  2. Save to MongoDB ---------- */
   try {
-    const newContact = await client
+    await client
       .db("Zuppa")
       .collection("contact")
-      .insertOne({ name, email, subject, message, phone });  // Store phone number in the database
+      .insertOne({
+        name,
+        email,
+        phone,
+        state,
+        district,
+        pin,
+        subject,
+        message,
+        createdAt: new Date(),
+      });
+  } catch (dbErr) {
+    console.error("DB insert error:", dbErr);
+    return res.status(500).json({ error: "Database write failed" });
+  }
 
-    // Send email to admin
-    const adminMailOptions = {
-      from: process.env.EMAIL,
+  /* ----------  3. Build e-mails ---------- */
+  const adminHtml = `
+    <div style="max-width:600px;margin:0 auto;border:1px solid #e5e5e5;
+                border-radius:15px;padding:20px;font-family:Arial,sans-serif">
+      <h2 style="color:orange;margin-top:0">New Contact Form Submission</h2>
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td><strong>Name:</strong></td><td>${name}</td></tr>
+        <tr><td><strong>Email:</strong></td><td><a href="mailto:${email}">${email}</a></td></tr>
+        <tr><td><strong>Phone:</strong></td><td><a href="tel:+91${phone}">${phone}</a></td></tr>
+        <tr><td><strong>State:</strong></td><td>${state}</td></tr>
+        <tr><td><strong>District:</strong></td><td>${district}</td></tr>
+        <tr><td><strong>PIN:</strong></td><td>${pin}</td></tr>
+        <tr><td><strong>Subject:</strong></td><td>${subject}</td></tr>
+        <tr><td style="vertical-align:top"><strong>Message:</strong></td>
+            <td>${message.replace(/\n/g, "<br/>")}</td></tr>
+      </table>
+    </div>`;
+
+  const userHtml = `
+    <div style="max-width:600px;margin:0 auto;border:1px solid #e5e5e5;
+                border-radius:15px;padding:20px;font-family:Arial,sans-serif">
+      <h2 style="color:orange;margin-top:0">Thank You for Contacting Us</h2>
+      <p>Hi ${name},</p>
+      <p>We’ve received your enquiry and will get back to you soon.</p>
+      <p style="margin:0"><strong>Your details for reference:</strong></p>
+      <ul style="margin:4px 0 16px 0;padding-left:18px">
+        <li><strong>Subject:</strong> ${subject}</li>
+        <li><strong>State:</strong> ${state}</li>
+        <li><strong>District:</strong> ${district}</li>
+        <li><strong>PIN:</strong> ${pin}</li>
+      </ul>
+      <p style="margin:0">Regards,</p>
+      <p style="margin:0;color:darkorange"><strong>Zuppa Geo Navigation</strong></p>
+      <p style="margin:0;font-size:13px">Polyhose Tower No.86, 4th Floor, Anna Salai, Guindy, Chennai 600032</p>
+    </div>`;
+
+  /* ----------  4. Send mail ---------- */
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL, // e.g. "Zuppa <no-reply@zuppa.io>"
       to: "askme@zuppa.io",
-   
       subject: "New Contact Form Submission",
-      html: `
-      <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="color: orange; margin: 0;">New Contact Form Submission</h2>
-                <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
-        </div> 
+      html: adminHtml,
+    });
 
-        <ul style="list-style-type: none; padding: 0;">
-                <br/>
-                <li style="display: flex; align-items: center;"> 
-                  <p>You have received a new message from <img src="00
-                  " alt="Email" style="width: 16px; margin-right: 8px;">
-                    <strong><a href="mailto:${email}">${email}</a></strong>
-                  </p>
-                </li>
-                <br/>
-                <li style="display: flex; align-items: center;"> <p><strong>Subject:</strong> ${subject}</p></li>
-                <br/>
-                <li style="display: flex; align-items: center;"><p><strong>Name:</strong> ${name}</p></li>
-                <br/>
-              <li style="display: flex; align-items: center;"> 
-              <p> <strong>Phone Number:</strong> ${phone} </p>
-              </li>
-                <br/>
-                <li style="display: flex; align-items: center;"> <p><strong>Message:</strong> ${message}</p></li>
-                <br/>
-        </ul>
-      </div>
-      `,
-    };
-
-    await transporter.sendMail(adminMailOptions);
-
-    // Send acknowledgment email to user from no-reply address
-    const userMailOptions = {
+    await transporter.sendMail({
       from: process.env.EMAIL,
       to: email,
       subject: "Thank You for Contacting Us",
-      html: `
-      <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="color: orange; margin: 0;">Thank You for Contacting Us</h2>
-                <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
-        </div>
-        <h4>Dear ${name},</h4>
-        <p>Thank you for reaching out to us.</p>
-        <p>We have received your message and will get back to you shortly.</p>
-        <ul style="list-style-type: none; padding: 0;">
-                <br/>
-                <li style="display: flex; align-items: center;">
-                  <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412385/fjurbddsghxmmuyynylt.webp" alt="Email" style="width: 16px; margin-right: 8px;">Sales Support: <strong><a href="mailto:askme@zuppa.io">askme@zuppa.io</a>  </strong>
-                </li>
-                <br/>
-                <li style="display: flex; align-items: center;">
-                  <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412386/t4ca5vpzjwhjol4vg0mj.png" alt="Phone" style="width: 16px; margin-right: 8px;">Phone Number: <strong><a href="tel:+91 9952081655">9952081655</a></strong>
-                </li>
-                <br/>
-        </ul>
-        <p>Best regards,</p>
-        <h3 style="color: darkorange;">Zuppa Geo Navigation</h3>
-        <p><strong>Address:</strong></p>
-        <p>Polyhose Tower No.86, West Wing</p>
-        <p>4th Floor Anna Salai, Guindy</p>
-        <p>Chennai, Tamil Nadu-600032</p> 
-      </div>
-      `,
-    };
-
-    await transporter.sendMail(userMailOptions);
-
-    res.status(201).send({
-      message: "Form submitted and acknowledgment email sent successfully",
+      html: userHtml,
     });
-  } catch (error) {
-    res.status(400).send({ error: error.message });
+  } catch (mailErr) {
+    console.error("Mail error:", mailErr);
+    // Don’t fail the request just because email failed
   }
+
+  /* ----------  5. All good ---------- */
+  res.status(201).json({ message: "Form stored and e-mails queued" });
 });
+
+
+
+
 
 
 //------------------------- Drone labs contact ----------------------------------------------------------------------------------------
@@ -1012,52 +1138,7 @@ app.post("/api/verify-otp", async (req, res) => {
 
 // ----------------------   aadhar verify  ---------------
 
-app.post("/api/verify-aadhar", (req, res) => {
-  const { aadhar } = req.body;
 
-  function validateVerhoeff(num) {
-    const d = [
-      [0,1,2,3,4,5,6,7,8,9],
-      [1,2,3,4,0,6,7,8,9,5],
-      [2,3,4,0,1,7,8,9,5,6],
-      [3,4,0,1,2,8,9,5,6,7],
-      [4,0,1,2,3,9,5,6,7,8],
-      [5,9,8,7,6,0,4,3,2,1],
-      [6,5,9,8,7,1,0,4,3,2],
-      [7,6,5,9,8,2,1,0,4,3],
-      [8,7,6,5,9,3,2,1,0,4],
-      [9,8,7,6,5,4,3,2,1,0]
-    ];
-    const p = [
-      [0,1,2,3,4,5,6,7,8,9],
-      [1,5,7,6,2,8,3,0,9,4],
-      [5,8,0,3,7,9,6,1,4,2],
-      [8,9,1,6,0,4,3,5,2,7],
-      [9,4,5,3,1,2,6,8,7,0],
-      [4,2,8,6,5,7,3,9,0,1],
-      [2,7,9,3,8,0,6,4,1,5],
-      [7,0,4,6,9,1,3,2,5,8]
-    ];
-    const inv = [0,4,3,2,1,5,6,7,8,9];
-
-    let c = 0;
-    const myArray = num.split("").reverse().map(x => parseInt(x));
-    for (let i = 0; i < myArray.length; i++) {
-      c = d[c][p[i % 8][myArray[i]]];
-    }
-
-    return c === 0;
-  }
-
-  const is12Digits = /^\d{12}$/.test(aadhar);
-  const isValid = is12Digits && validateVerhoeff(aadhar);
-
-  if (isValid) {
-    res.status(200).json({ valid: true, message: "Valid Aadhaar number" });
-  } else {
-    res.status(400).json({ valid: false, message: "Invalid Aadhaar number" });
-  }
-});
 
 
 app.listen(PORT, () => {
