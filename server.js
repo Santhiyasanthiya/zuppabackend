@@ -398,13 +398,13 @@ app.post("/careerform", upload.single("resume"), async (req, res) => {
 //------------------------------------------ contact ---------------------------------------------------------------------------
 
 app.post("/api/contact", async (req, res) => {
-  const { name, email, subject, message, phone } = req.body;  // Added phone to the request body
+  const { name, email, subject, message, phone,  state,district} = req.body;  // Added phone to the request body
   
   try {
     const newContact = await client
       .db("Zuppa")
       .collection("contact")
-      .insertOne({ name, email, subject, message, phone });  // Store phone number in the database
+      .insertOne({ name, email, subject, message, phone, state,district });  // Store phone number in the database
 
     // Send email to admin
     const adminMailOptions = {
@@ -434,6 +434,14 @@ app.post("/api/contact", async (req, res) => {
                 <br/>
               <li style="display: flex; align-items: center;"> 
               <p> <strong>Phone Number:</strong> ${phone} </p>
+              </li>
+                <br/>
+                <li style="display: flex; align-items: center;"> 
+                  <p><strong>State:</strong> ${state}</p>
+                </li>
+                <br/>
+                <li style="display: flex; align-items: center;"> 
+                  <p><strong>District:</strong> ${district}</p>
               </li>
                 <br/>
                 <li style="display: flex; align-items: center;"> <p><strong>Message:</strong> ${message}</p></li>
