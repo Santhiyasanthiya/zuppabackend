@@ -921,7 +921,7 @@ app.post("/api/check-email", async (req, res) => {
 
 
 //-------------------------------android login Download API --------------------------------------------------------
-// const { generateOtp, getOtpExpiry, sendOtpMail } = require("../otp");
+
 
 
 // app.post("/api/software-download-login", async function (req, res) {
@@ -973,7 +973,16 @@ app.post("/api/check-email", async (req, res) => {
 //   }
 // });
 
-const { genOtp, sendOtpMail } = require("./utils/otpMailer");
+
+
+
+
+// utils/otpMailer.js
+
+
+
+
+
 
 
 app.post("/api/software-download-login", async (req, res) => {
@@ -1016,55 +1025,6 @@ app.post("/api/software-download-login", async (req, res) => {
 });
 // ----------------------------------------------------------------------
 
-app.post("/api/software-download-verify-otp", async (req, res) => {
-  const { email, otp } = req.body;           
-  try {
-    const db         = client.db("Zuppa");
-    const collection = db.collection("softwareDownloads");
-
-    const user = await collection.findOne({ email });
-    if (!user || !user.otpHash) {
-      return res.status(400).send({ message: "Please login first" });
-    }
-
-    /* ---------- Check expiry ---------- */
-    if (Date.now() > user.otpExpires) {
-      return res.status(400).send({ message: "OTP expired" });
-    }
-
-    /* ---------- Compare OTP ---------- */
-    const ok = await bcrypt.compare(otp, user.otpHash);
-    if (!ok) return res.status(400).send({ message: "Invalid OTP" });
-
-    /* ---------- Success! Issue JWT & clean up ---------- */
-    const token = Jwt.sign({ id: user._id }, process.env.SECRETKEY, {
-      expiresIn: "90d",
-    });
-
-    const loginTime = new Date();
-    await collection.updateOne(
-      { _id: user._id },
-      {
-        $unset: { otpHash: "", otpExpires: "" }, // remove OTP fields
-        $set  : { lastLogin: loginTime },
-      }
-    );
-
-    res.status(200).send({
-      zuppa   : token,
-      message : "Login successful",
-      _id     : user._id,
-      username: user.username,
-      loginTime: loginTime.toLocaleString(),
-    });
-
-    console.log(`✅ ${user.username} verified OTP & logged in at ${loginTime.toLocaleString()}`);
-
-  } catch (err) {
-    console.error("OTP Verify Error:", err);
-    res.status(500).send({ message: "Server Error", error: err.message });
-  }
-});
 
 // ====================== OTP SEND AND VERIFY Email ===========================================================
 
