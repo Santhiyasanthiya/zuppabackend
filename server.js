@@ -1025,6 +1025,28 @@ app.post("/api/software-download-login", async (req, res) => {
 });
 // ----------------------------------------------------------------------
 
+async function sendOtpMail(to, otp) {
+  try {
+    const info = await transporter.sendMail({
+      from    : `"${process.env.FROM_NAME}" <${process.env.EMAIL_USER}>`,
+      to,
+      subject : "Your Zuppa OTP Code",
+      html    : `
+        <div style="font-family: Arial; padding: 20px;">
+          <h2 style="color: darkorange;">Your OTP Code</h2>
+          <p>Use the 6‑digit OTP below to verify your download:</p>
+          <h1 style="letter-spacing: 4px;">${otp}</h1>
+          <p>This OTP is valid for 5 minutes.</p>
+          <p>- Team Zuppa Geo Navigation</p>
+        </div>`
+    });
+    console.log("✉️  OTP mail sent:", info.messageId);
+    return info;
+  } catch (err) {
+    console.error("❌ OTP mail error:", err);
+    throw err;               // bubbles up to the route’s catch
+  }
+}
 
 // ====================== OTP SEND AND VERIFY Email ===========================================================
 
