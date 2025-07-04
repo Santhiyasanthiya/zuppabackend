@@ -974,79 +974,107 @@ app.post("/api/check-email", async (req, res) => {
 // });
 
 
+/* ─── Helper: 4‑digit OTP ───────────────── */
+const genOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 
-
-
-// utils/otpMailer.js
-
-
-
-
-
-
-
+/* ──────────────────────────────────────────
+   STEP‑1  LOGIN  (email + password)         */
 app.post("/api/software-download-login", async (req, res) => {
   const { email, password } = req.body;
   try {
-    const db         = client.db("Zuppa");
-    const collection = db.collection("softwareDownloads");
-
-    const user = await collection.findOne({ email });
-    if (!user) return res.status(400).send({ message: "Invalid Email" });
+    const col  = client.db("Zuppa").collection("softwareDownloads");
+    const user = await col.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid Email" });
 
     const ok = await bcrypt.compare(password, user.password);
-    if (!ok)  return res.status(400).send({ message: "Invalid Password" });
+    if (!ok)  return res.status(400).json({ message: "Invalid Password" });
 
-    /* ---------- 1) Generate & hash OTP ---------- */
+    /* ① Generate + hash OTP */
     const otp        = genOtp();
     const otpHash    = await bcrypt.hash(otp, 10);
-    const otpExpires = Date.now() + 5 * 60_000;      // 5 minutes
+    const otpExpires = Date.now() + 5 * 60_000;   // 5 min
 
-    /* ---------- 2) Save OTP in user doc ---------- */
-    await collection.updateOne(
+    await col.updateOne(
       { _id: user._id },
       { $set: { otpHash, otpExpires } }
     );
 
-    /* ---------- 3) Send mail ---------- */
-    await sendOtpMail(email, otp);
-
-    /* ---------- 4) Reply ---------- */
-    return res.status(200).send({
-      message : "OTP sent to your e‑mail",
-      _id     : user._id,       
-      email,
+    /* ② Send e‑mail */
+    await transporter.sendMail({
+      from   : process.env.EMAIL,
+      to     : email,
+      subject: "Your Zuppa OTP Code",
+      html   : `
+        <h2 style="color:#ff6f00;">Your OTP Code</h2>
+        <p>Enter the 4‑digit code below to complete login:</p>
+        <h1 style="letter-spacing:6px;">${otp}</h1>
+        <p>This code expires in 5 minutes.</p>`
     });
+    console.log("✉️  OTP mailed to", email, "OTP:", otp);
+
+    return res.status(200).json({ message: "OTP sent to your e‑mail", email });
 
   } catch (err) {
-    console.error("Login Error:", err);
-    res.status(500).send({ message: "Server Error", error: err.message });
+    console.error("Login Error:", err);
+    res.status(500).json({ message: "Server Error", error: err.message });
   }
 });
+
+/* ──────────────────────────────────────────
+   STEP‑2  VERIFY OTP                        */
+app.post("/api/software-download-verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+  try {
+    const col  = client.db("Zuppa").collection("softwareDownloads");
+    const user = await col.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Please login first" });
+
+    if (!user.otpHash || Date.now() > user.otpExpires)
+      return res.status(400).json({ message: "OTP expired" });
+
+    const ok = await bcrypt.compare(otp, user.otpHash);
+    if (!ok) return res.status(400).json({ message: "Invalid OTP" });
+
+    /* ① Success → issue JWT */
+    const token = Jwt.sign({ id: user._id }, process.env.SECRETKEY, {
+      expiresIn: "90d",
+    });
+
+    /* ② Clean up + update lastLogin */
+    await col.updateOne(
+      { _id: user._id },
+      {
+        $unset: { otpHash: "", otpExpires: "" },
+        $set  : { lastLogin: new Date() },
+      }
+    );
+
+    res.status(200).json({
+      message : "Login successful",
+      zuppa   : token,
+      _id     : user._id,
+      username: user.username,
+    });
+
+  } catch (err) {
+    console.error("OTP Verify Error:", err);
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
 // ----------------------------------------------------------------------
 
-async function sendOtpMail(to, otp) {
-  try {
-    const info = await transporter.sendMail({
-      from    : `"${process.env.FROM_NAME}" <${process.env.EMAIL_USER}>`,
-      to,
-      subject : "Your Zuppa OTP Code",
-      html    : `
-        <div style="font-family: Arial; padding: 20px;">
-          <h2 style="color: darkorange;">Your OTP Code</h2>
-          <p>Use the 6‑digit OTP below to verify your download:</p>
-          <h1 style="letter-spacing: 4px;">${otp}</h1>
-          <p>This OTP is valid for 5 minutes.</p>
-          <p>- Team Zuppa Geo Navigation</p>
-        </div>`
-    });
-    console.log("✉️  OTP mail sent:", info.messageId);
-    return info;
-  } catch (err) {
-    console.error("❌ OTP mail error:", err);
-    throw err;               // bubbles up to the route’s catch
-  }
-}
+
 
 // ====================== OTP SEND AND VERIFY Email ===========================================================
 
@@ -1106,3 +1134,18 @@ app.post("/api/verify-otp", async (req, res) => {
 app.listen(PORT, () => {
   console.log("Listening successfully on port", PORT);
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+// *****************************************************************************************
+
