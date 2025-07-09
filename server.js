@@ -523,36 +523,33 @@ app.post("/api/dronelabcontact", async (req, res) => {
   console.log(username, emailid, phoneNumber, state);
 
   try {
-    // Insert into MongoDB
     await client
       .db("Zuppa")
       .collection("droneLab")
       .insertOne({ username, emailid, phoneNumber, state });
 
-    // 1️⃣ Admin Email
     const adminMailOptions = {
       from: process.env.EMAIL,
       to: "santhiya30032@gmail.com",
       cc: "santhiya30032@gmail.com",
       subject: "New Contact Form Submission",
       html: `
-        <div style="max-width:600px;margin:0 auto;padding:20px;border-radius:15px;">
+        <div>
           <h2 style="color:rgb(255,94,0);">Drone Lab Inquiry</h2>
-          <ul style="list-style:none;padding:0;">
-            <li><strong>Name:</strong> ${username}</li><br/>
-            <li><strong>Phone:</strong> <a href="tel:${phoneNumber}">${phoneNumber}</a></li><br/>
-            <li><strong>Email:</strong> <a href="mailto:${emailid}">${emailid}</a></li><br/>
+          <ul>
+            <li><strong>Name:</strong> ${username}</li>
+            <li><strong>Phone:</strong> ${phoneNumber}</li>
+            <li><strong>Email:</strong> ${emailid}</li>
             <li><strong>State:</strong> ${state}</li>
           </ul>
         </div>`
     };
     await transporter.sendMail(adminMailOptions);
 
-    // 2️⃣ Acknowledgment Email with PDF attachment
- const pdfPath = path.join(__dirname, "zuppa.pdf");
+    const pdfPath = path.join(__dirname, "public", "zuppa.pdf");
     if (!fs.existsSync(pdfPath)) {
-      console.error("⚠️ PDF file not found at", pdfPath);
-      throw new Error("PDF not available");
+      console.error("PDF not found", pdfPath);
+      throw new Error("PDF not found");
     }
 
     const userMailOptions = {
@@ -560,32 +557,23 @@ app.post("/api/dronelabcontact", async (req, res) => {
       to: emailid,
       subject: "Thank You for Contacting Drone lab",
       html: `
-        <div style="max-width:600px;margin:0 auto;padding:20px;border-radius:15px;">
-          <h2 style="color:orange;">Thank You for Contacting Drone lab</h2>
-          <h4>Dear ${username},</h4>
-          <p>We have received your message and will respond shortly.</p>
-          <p><strong>Please find our company profile attached.</strong></p><br/>
-          <p>Best regards,</p>
-          <h3 style="color:darkorange;">Zuppa Geo Navigation</h3>
-          <p>📧 <a href="mailto:askme@zuppa.io">askme@zuppa.io</a><br/>
-             📞 <a href="tel:+919952081655">9952081655</a></p>
-          <p style="margin-top:15px;"><strong>Address:</strong><br/>Polyhose Tower No.86, West Wing<br/>4th Floor Anna Salai, Guindy<br/>Chennai, Tamil Nadu – 600032</p>
-        </div>`,
+        <h3>Dear ${username},</h3>
+        <p>Thanks for contacting Zuppa Drone Lab. Find our profile attached.</p>
+        <p>Regards,<br/>Zuppa Geo Navigation</p>`,
       attachments: [
         {
           filename: "zuppa.pdf",
           path: pdfPath,
-          contentType: "application/pdf"
-        }
-      ]
+          contentType: "application/pdf",
+        },
+      ],
     };
-
     await transporter.sendMail(userMailOptions);
 
-    return res.status(201).send({ message: "Submission and PDF email sent." });
+    res.status(201).send({ message: "Emails sent with PDF." });
   } catch (error) {
-    console.error("Backend error:", error);
-    return res.status(500).send({ error: error.message });
+    console.error("Error:", error);
+    res.status(500).send({ error: error.message });
   }
 });
 
