@@ -531,8 +531,11 @@ app.post("/api/dronelabcontact", async (req, res) => {
           <h2 style="color: rgb(255, 94, 0);">Drone Lab Inquiry</h2>
           <ul style="list-style-type: none; padding: 0;">
             <li><strong>Name:</strong> ${username}</li>
+                 <br/>
             <li><strong>Phone Number:</strong> <a href="tel:${phoneNumber}">${phoneNumber}</a></li>
+                 <br/>
             <li><strong>Email:</strong> <a href="mailto:${emailid}">${emailid}</a></li>
+                 <br/>
             <li><strong>State:</strong> ${state}</li>
           </ul>
         </div>
