@@ -506,13 +506,16 @@ app.post("/api/contact", async (req, res) => {
 
 //------------------------- Drone labs contact ----------------------------------------------------------------------------------------
 
+const path = require("path"); 
+const fs = require("fs");
+
 app.post("/api/dronelabcontact", async (req, res) => {
   const { username, emailid, phoneNumber, state } = req.body;
   console.log(username, emailid, phoneNumber, state);
 
   try {
-    // Store data in MongoDB
-    const newContact = await client
+    // Store in MongoDB
+    await client
       .db("Zuppa")
       .collection("droneLab")
       .insertOne({ username, emailid, phoneNumber, state });
@@ -521,79 +524,61 @@ app.post("/api/dronelabcontact", async (req, res) => {
     const adminMailOptions = {
       from: process.env.EMAIL,
       to: "santhiya30032@gmail.com",
-      // cc: "sivakumar@zuppa.io",
-        cc: "santhiya30032@gmail.com",
+      cc: "santhiya30032@gmail.com",
       subject: "New Contact Form Submission",
       html: `
-        <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="color: orange; margin: 0;">Drone Lab Inquiry</h2>
-            <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
-          </div>
-
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border-radius: 15px;">
+          <h2 style="color: rgb(255, 94, 0);">Drone Lab Inquiry</h2>
           <ul style="list-style-type: none; padding: 0;">
-            <br/>
-            <li><p>You have received a new message from <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412385/fjurbddsghxmmuyynylt.webp" alt="Email" style="width: 16px; margin-right: 8px;"><strong><a href="mailto:${emailid}">${emailid}</a></strong></p></li>
-            <br/>
-            <li><p><strong>Name:</strong> ${username}</p></li>
-            <br/>
-            <li><p><strong>Phone Number:</strong> <a href="tel:${phoneNumber}">${phoneNumber}</a></p></li>
-            <br/>
-            <li><p><strong>State:</strong> ${state}</p></li>
-            <br/>
+            <li><strong>Name:</strong> ${username}</li>
+            <li><strong>Phone Number:</strong> <a href="tel:${phoneNumber}">${phoneNumber}</a></li>
+            <li><strong>Email:</strong> <a href="mailto:${emailid}">${emailid}</a></li>
+            <li><strong>State:</strong> ${state}</li>
           </ul>
         </div>
       `,
     };
-
     await transporter.sendMail(adminMailOptions);
 
-    // Acknowledgment Email to User
+    // Acknowledgment Email to User with PDF
+    const pdfPath = path.join(__dirname, "zuppa.pdf");
+
     const userMailOptions = {
       from: process.env.EMAIL,
       to: emailid,
       subject: "Thank You for Contacting Drone lab",
       html: `
-        <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="color: orange; margin: 0;">Thank You for Contacting Drone lab</h2>
-            <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
-          </div>
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border-radius: 15px;">
+          <h2 style="color: orange;">Thank You for Contacting Drone lab</h2>
           <h4>Dear ${username},</h4>
-          <p>Thank you for reaching out to us. We have received your message and will respond to you shortly.</p>
-          <p><strong>Your submitted details:</strong></p>
-          <ul style="list-style-type: none; padding: 0;">
-            <br/>
-            <li><strong>Name:</strong> ${username}</li>
-            <li><strong>Email:</strong> ${emailid}</li>
-            <li><strong>Phone:</strong> ${phoneNumber}</li>
-            <li><strong>State:</strong> ${state}</li>
-            <br/>
-          </ul>
+          <p>Thank you for reaching out to us. We have received your message and will respond shortly.</p>
+          <p><strong>Attached is our company profile (PDF).</strong></p>
+          <br/>
           <p>Best regards,</p>
           <h3 style="color: darkorange;">Zuppa Geo Navigation</h3>
           <ul style="list-style-type: none; padding: 0;">
-            <br/>
-            <li><img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412385/fjurbddsghxmmuyynylt.webp" alt="Email" style="width: 16px; margin-right: 8px;">Sales Support: <strong><a href="mailto:askme@zuppa.io">askme@zuppa.io</a></strong></li>
-            <br/>
-            <li><img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412386/t4ca5vpzjwhjol4vg0mj.png" alt="Phone" style="width: 16px; margin-right: 8px;">Phone Number: <strong><a href="tel:+91 9952081655">9952081655</a></strong></li>
-            <br/>
+            <li>📧 <strong><a href="mailto:askme@zuppa.io">askme@zuppa.io</a></strong></li>
+            <li>📞 <strong><a href="tel:+91 9952081655">9952081655</a></strong></li>
           </ul>
-          <p><strong>Address:</strong></p>
-          <p>Polyhose Tower No.86, West Wing</p>
-          <p>4th Floor Anna Salai, Guindy</p>
-          <p>Chennai, Tamil Nadu-600032</p>
+          <p><strong>Address:</strong><br/>Polyhose Tower No.86, West Wing<br/>4th Floor Anna Salai, Guindy<br/>Chennai, Tamil Nadu - 600032</p>
         </div>
       `,
+      attachments: [
+        {
+          filename: "zuppa.pdf",
+          path: pdfPath,
+          contentType: "application/pdf"
+        }
+      ]
     };
 
     await transporter.sendMail(userMailOptions);
 
     res.status(201).send({
-      message: "Form submitted and acknowledgment email sent successfully",
+      message: "Form submitted and PDF email sent successfully",
     });
-
   } catch (error) {
+    console.error("Email/PDF error:", error);
     res.status(400).send({ error: error.message });
   }
 });
