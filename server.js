@@ -13,6 +13,11 @@ import fs from "fs";
 
 
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+
+
 
 
 
@@ -35,7 +40,8 @@ app.use(cors({ origin: "*", credentials: true }));
 
 
 
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 
@@ -509,63 +515,62 @@ app.post("/api/contact", async (req, res) => {
 
 
 
+
+
+
 app.post("/api/dronelabcontact", async (req, res) => {
   const { username, emailid, phoneNumber, state } = req.body;
   console.log(username, emailid, phoneNumber, state);
 
   try {
-    // Store in MongoDB
+    // Insert into MongoDB
     await client
       .db("Zuppa")
       .collection("droneLab")
       .insertOne({ username, emailid, phoneNumber, state });
 
-    // Admin Email
+    // 1️⃣ Admin Email
     const adminMailOptions = {
       from: process.env.EMAIL,
       to: "santhiya30032@gmail.com",
       cc: "santhiya30032@gmail.com",
       subject: "New Contact Form Submission",
       html: `
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border-radius: 15px;">
-          <h2 style="color: rgb(255, 94, 0);">Drone Lab Inquiry</h2>
-          <ul style="list-style-type: none; padding: 0;">
-            <li><strong>Name:</strong> ${username}</li>
-                 <br/>
-            <li><strong>Phone Number:</strong> <a href="tel:${phoneNumber}">${phoneNumber}</a></li>
-                 <br/>
-            <li><strong>Email:</strong> <a href="mailto:${emailid}">${emailid}</a></li>
-                 <br/>
+        <div style="max-width:600px;margin:0 auto;padding:20px;border-radius:15px;">
+          <h2 style="color:rgb(255,94,0);">Drone Lab Inquiry</h2>
+          <ul style="list-style:none;padding:0;">
+            <li><strong>Name:</strong> ${username}</li><br/>
+            <li><strong>Phone:</strong> <a href="tel:${phoneNumber}">${phoneNumber}</a></li><br/>
+            <li><strong>Email:</strong> <a href="mailto:${emailid}">${emailid}</a></li><br/>
             <li><strong>State:</strong> ${state}</li>
           </ul>
-        </div>
-      `,
+        </div>`
     };
     await transporter.sendMail(adminMailOptions);
 
-    // Acknowledgment Email to User with PDF
-    const pdfPath = path.join(__dirname, "zuppa.pdf");
+    // 2️⃣ Acknowledgment Email with PDF attachment
+ const pdfPath = path.join(__dirname, "zuppa.pdf");
+    if (!fs.existsSync(pdfPath)) {
+      console.error("⚠️ PDF file not found at", pdfPath);
+      throw new Error("PDF not available");
+    }
 
     const userMailOptions = {
       from: process.env.EMAIL,
       to: emailid,
       subject: "Thank You for Contacting Drone lab",
       html: `
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border-radius: 15px;">
-          <h2 style="color: orange;">Thank You for Contacting Drone lab</h2>
+        <div style="max-width:600px;margin:0 auto;padding:20px;border-radius:15px;">
+          <h2 style="color:orange;">Thank You for Contacting Drone lab</h2>
           <h4>Dear ${username},</h4>
-          <p>Thank you for reaching out to us. We have received your message and will respond shortly.</p>
-          <p><strong>Attached is our company profile (PDF).</strong></p>
-          <br/>
+          <p>We have received your message and will respond shortly.</p>
+          <p><strong>Please find our company profile attached.</strong></p><br/>
           <p>Best regards,</p>
-          <h3 style="color: darkorange;">Zuppa Geo Navigation</h3>
-          <ul style="list-style-type: none; padding: 0;">
-            <li>📧 <strong><a href="mailto:askme@zuppa.io">askme@zuppa.io</a></strong></li>
-            <li>📞 <strong><a href="tel:+91 9952081655">9952081655</a></strong></li>
-          </ul>
-          <p><strong>Address:</strong><br/>Polyhose Tower No.86, West Wing<br/>4th Floor Anna Salai, Guindy<br/>Chennai, Tamil Nadu - 600032</p>
-        </div>
-      `,
+          <h3 style="color:darkorange;">Zuppa Geo Navigation</h3>
+          <p>📧 <a href="mailto:askme@zuppa.io">askme@zuppa.io</a><br/>
+             📞 <a href="tel:+919952081655">9952081655</a></p>
+          <p style="margin-top:15px;"><strong>Address:</strong><br/>Polyhose Tower No.86, West Wing<br/>4th Floor Anna Salai, Guindy<br/>Chennai, Tamil Nadu – 600032</p>
+        </div>`,
       attachments: [
         {
           filename: "zuppa.pdf",
@@ -577,14 +582,13 @@ app.post("/api/dronelabcontact", async (req, res) => {
 
     await transporter.sendMail(userMailOptions);
 
-    res.status(201).send({
-      message: "Form submitted and PDF email sent successfully",
-    });
+    return res.status(201).send({ message: "Submission and PDF email sent." });
   } catch (error) {
-    console.error("Email/PDF error:", error);
-    res.status(400).send({ error: error.message });
+    console.error("Backend error:", error);
+    return res.status(500).send({ error: error.message });
   }
 });
+
 
 //------------------------------- Route to create a Razorpay order--------------------------------------------------------
 // app.post("/createOrder", async (req, res) => {
