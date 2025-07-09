@@ -533,13 +533,13 @@ app.post("/api/dronelabcontact", async (req, res) => {
         <div>
           <h2 style="color:rgb(255,94,0);"> Drone Lab Inquiry </h2>
           <ul>
-            <h4><strong> 🫧 Name:</strong> ${username}</h4>
+            <h4><strong>  Name:</strong> ${username}</h4>
             <br/>
-            <h4><strong> 🫧 Phone:</strong> ${phoneNumber}</h4>
+            <h4><strong>  Phone:</strong> ${phoneNumber}</h4>
              <br/>
-            <h4><strong> 🫧 Email:</strong> ${emailid}</h4>
+            <h4><strong>  Email:</strong> ${emailid}</h4>
              <br/>
-            <h4><strong>🫧 State:</strong> ${state}</h4>
+            <h4><strong> State:</strong> ${state}</h4>
           </ul>
         </div>`
     };
