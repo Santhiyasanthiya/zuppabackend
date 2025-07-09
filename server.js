@@ -507,81 +507,92 @@ app.post("/api/contact", async (req, res) => {
 //------------------------- Drone labs contact ----------------------------------------------------------------------------------------
 
 app.post("/api/dronelabcontact", async (req, res) => {
-  const { username, emailid, phoneNumber } = req.body;
-  console.log(username, emailid, phoneNumber);
+  const { username, emailid, phoneNumber, state } = req.body;
+  console.log(username, emailid, phoneNumber, state);
 
   try {
+    // Store data in MongoDB
     const newContact = await client
       .db("Zuppa")
       .collection("droneLab")
-      .insertOne({ username, emailid, phoneNumber });
+      .insertOne({ username, emailid, phoneNumber, state });
 
-    // Send email to admin
+    // Admin Email
     const adminMailOptions = {
       from: process.env.EMAIL,
-      to: "askme@zuppa.io",
-      cc: "sivakumar@zuppa.io",
+      to: "santhiya30032@gmail.com",
+      // cc: "sivakumar@zuppa.io",
+        cc: "santhiya30032@gmail.com",
       subject: "New Contact Form Submission",
       html: `
         <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="color: orange; margin: 0;">Drone Lab Inquiry</h2>
-        <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
-        </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="color: orange; margin: 0;">Drone Lab Inquiry</h2>
+            <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
+          </div>
 
           <ul style="list-style-type: none; padding: 0;">
-                <br/>
-                <li style="display: flex; align-items: center;"> <p>You have received a new message from <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412385/fjurbddsghxmmuyynylt.webp" alt="Email" style="width: 16px; margin-right: 8px;"><strong><a href="mailto:${emailid}">${emailid}</a>  </strong> </p></li>
-                <br/>
-                <li style="display: flex; align-items: center;"><p><strong>Name:</strong> ${username}</p></li>
-                <br/>
-                <li style="display: flex; align-items: center;"><p><strong>Phone Number:</strong> <a href="tel:${phoneNumber}">${phoneNumber}</a></p></li>
-                <br/>
+            <br/>
+            <li><p>You have received a new message from <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412385/fjurbddsghxmmuyynylt.webp" alt="Email" style="width: 16px; margin-right: 8px;"><strong><a href="mailto:${emailid}">${emailid}</a></strong></p></li>
+            <br/>
+            <li><p><strong>Name:</strong> ${username}</p></li>
+            <br/>
+            <li><p><strong>Phone Number:</strong> <a href="tel:${phoneNumber}">${phoneNumber}</a></p></li>
+            <br/>
+            <li><p><strong>State:</strong> ${state}</p></li>
+            <br/>
           </ul>
-        </div>`,
+        </div>
+      `,
     };
 
     await transporter.sendMail(adminMailOptions);
 
-    // Send acknowledgment email to user
+    // Acknowledgment Email to User
     const userMailOptions = {
       from: process.env.EMAIL,
       to: emailid,
-
       subject: "Thank You for Contacting Drone lab",
       html: `
         <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-              <h2 style="color: orange; margin: 0;">Thank You for Contacting Drone lab</h2>
-              <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
-              </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="color: orange; margin: 0;">Thank You for Contacting Drone lab</h2>
+            <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
+          </div>
           <h4>Dear ${username},</h4>
           <p>Thank you for reaching out to us. We have received your message and will respond to you shortly.</p>
+          <p><strong>Your submitted details:</strong></p>
+          <ul style="list-style-type: none; padding: 0;">
+            <br/>
+            <li><strong>Name:</strong> ${username}</li>
+            <li><strong>Email:</strong> ${emailid}</li>
+            <li><strong>Phone:</strong> ${phoneNumber}</li>
+            <li><strong>State:</strong> ${state}</li>
+            <br/>
+          </ul>
           <p>Best regards,</p>
           <h3 style="color: darkorange;">Zuppa Geo Navigation</h3>
           <ul style="list-style-type: none; padding: 0;">
-                <br/>
-                <li style="display: flex; align-items: center;"><img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412385/fjurbddsghxmmuyynylt.webp" alt="Email" style="width: 16px; margin-right: 8px;">Sales Support: <strong><a href="mailto:askme@zuppa.io">askme@zuppa.io</a>  </strong></li>
-                <br/>
-                <li style="display: flex; align-items: center;"><img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412386/t4ca5vpzjwhjol4vg0mj.png" alt="Phone" style="width: 16px; margin-right: 8px;">Phone Number: <strong><a href="tel:+91 9952081655">9952081655</a></strong></li>
-                <br/>
-              </ul>
+            <br/>
+            <li><img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412385/fjurbddsghxmmuyynylt.webp" alt="Email" style="width: 16px; margin-right: 8px;">Sales Support: <strong><a href="mailto:askme@zuppa.io">askme@zuppa.io</a></strong></li>
+            <br/>
+            <li><img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412386/t4ca5vpzjwhjol4vg0mj.png" alt="Phone" style="width: 16px; margin-right: 8px;">Phone Number: <strong><a href="tel:+91 9952081655">9952081655</a></strong></li>
+            <br/>
+          </ul>
           <p><strong>Address:</strong></p>
           <p>Polyhose Tower No.86, West Wing</p>
           <p>4th Floor Anna Salai, Guindy</p>
           <p>Chennai, Tamil Nadu-600032</p>
-          
         </div>
       `,
     };
 
     await transporter.sendMail(userMailOptions);
 
-    res
-      .status(201)
-      .send({
-        message: "Form submitted and acknowledgment email sent successfully",
-      });
+    res.status(201).send({
+      message: "Form submitted and acknowledgment email sent successfully",
+    });
+
   } catch (error) {
     res.status(400).send({ error: error.message });
   }
@@ -977,8 +988,7 @@ app.post("/api/check-email", async (req, res) => {
 /* ─── Helper: 4‑digit OTP ───────────────── */
 const genOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 
-/* ──────────────────────────────────────────
-   STEP‑1  LOGIN  (email + password)         */
+/* ─── STEP‑1  LOGIN  (email + password) ----------------------------- */
 app.post("/api/software-download-login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -1020,8 +1030,10 @@ app.post("/api/software-download-login", async (req, res) => {
   }
 });
 
-/* ──────────────────────────────────────────
-   STEP‑2  VERIFY OTP                        */
+/* ────────────────────────────────────────── STEP‑2  VERIFY OTP                        */
+
+
+   
 app.post("/api/software-download-verify-otp", async (req, res) => {
   const { email, otp } = req.body;
   try {
@@ -1063,24 +1075,12 @@ app.post("/api/software-download-verify-otp", async (req, res) => {
 });
 
 
-
-
-
-
-
-
-
-
-
-// ----------------------------------------------------------------------
-
-
-
 // ====================== OTP SEND AND VERIFY Email ===========================================================
 
 const otpMap = new Map(); 
 
 app.post("/api/send-otp", async (req, res) => {
+  
   const { email } = req.body;
 
   // Validate email format
