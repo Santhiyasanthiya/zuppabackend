@@ -512,22 +512,18 @@ app.post("/api/contact", async (req, res) => {
 
 //------------------------- Drone labs contact ----------------------------------------------------------------------------------------
 
-
-
-
-
-
-
 app.post("/api/dronelabcontact", async (req, res) => {
   const { username, emailid, phoneNumber, state } = req.body;
   console.log(username, emailid, phoneNumber, state);
 
   try {
+    // 1. Save to DB
     await client
       .db("Zuppa")
       .collection("droneLab")
       .insertOne({ username, emailid, phoneNumber, state });
 
+    // 2. Admin Email
     const adminMailOptions = {
       from: process.env.EMAIL,
       to: "santhiya30032@gmail.com",
@@ -546,36 +542,42 @@ app.post("/api/dronelabcontact", async (req, res) => {
     };
     await transporter.sendMail(adminMailOptions);
 
-    const pdfPath = path.join(__dirname, "public", "zuppa.pdf");
+    // 3. User Acknowledgment + PDF attachment
+    const pdfPath = path.join(__dirname, 'public', 'zuppa.pdf');
+
     if (!fs.existsSync(pdfPath)) {
-      console.error("PDF not found", pdfPath);
-      throw new Error("PDF not found");
+      console.error("📄 PDF not found at:", pdfPath);
+      throw new Error("PDF file missing");
     }
 
     const userMailOptions = {
       from: process.env.EMAIL,
       to: emailid,
-      subject: "Thank You for Contacting Drone lab",
+      subject: "Thank You for Contacting Drone Lab",
       html: `
         <h3>Dear ${username},</h3>
-        <p>Thanks for contacting Zuppa Drone Lab. Find our profile attached.</p>
-        <p>Regards,<br/>Zuppa Geo Navigation</p>`,
+        <p>Thanks for contacting <strong>Zuppa Drone Lab</strong>.</p>
+        <p>We’ve received your message and will respond shortly.</p>
+        <p><strong>Our company profile is attached below as a PDF.</strong></p>
+        <p>Warm regards,<br/>Zuppa Geo Navigation</p>`,
       attachments: [
         {
           filename: "zuppa.pdf",
           path: pdfPath,
           contentType: "application/pdf",
-        },
-      ],
+        }
+      ]
     };
     await transporter.sendMail(userMailOptions);
 
-    res.status(201).send({ message: "Emails sent with PDF." });
+    // ✅ Final response
+    res.status(201).send({ message: "Emails sent to admin & client with PDF." });
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Backend error:", error);
     res.status(500).send({ error: error.message });
   }
 });
+
 
 
 //------------------------------- Route to create a Razorpay order--------------------------------------------------------
