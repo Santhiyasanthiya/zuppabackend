@@ -506,8 +506,8 @@ app.post("/api/contact", async (req, res) => {
 
 //------------------------- Drone labs contact ----------------------------------------------------------------------------------------
 
-const path = require("path"); 
-const fs = require("fs");
+
+
 
 app.post("/api/dronelabcontact", async (req, res) => {
   const { username, emailid, phoneNumber, state } = req.body;
