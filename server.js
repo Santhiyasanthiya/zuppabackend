@@ -534,8 +534,9 @@ app.post("/api/software-download-verify-otp", async (req, res) => {
 
 //------------------ Website Brochure Form Submission --------------------------
 
+// server.js  (or wherever your routes live)
 app.post("/api/brochure", async (req, res) => {
-  const { name, organization, phone, email } = req.body;
+  const { name, organization, phone, email, page = "" } = req.body;
 
   // ✅ Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -543,43 +544,82 @@ app.post("/api/brochure", async (req, res) => {
     return res.status(400).json({ message: "Invalid email format" });
   }
 
+  /* ------------------------------------------------------------------ */
+  /* 1.  Build product URL and human‑friendly title                     */
+  /* ------------------------------------------------------------------ */
+  const SHOP_BASE_URL = "https://shop.zuppa.io";
+  // page might arrive as "/ajeet_eagle" or "ajeet_eagle" – handle both
+  const productPath = page.startsWith("/") ? page : `/${page}`;
+  const productUrl  = `${SHOP_BASE_URL}${productPath}`;
+
+  // Convert "ajeet_eagle" → "Ajeet Eagle", "mini_hawk_(day)&(day&night)" → "Mini Hawk"
+  const productName = productPath
+    .split("/")               // keep last segment
+    .pop()
+    .replace(/\(.*\)/g, "")   // strip anything in ( )
+    .replace(/_/g, " ")       // underscores → spaces
+    .replace(/\s{2,}/g, " ")  // collapse double spaces
+    .trim()
+    .replace(/\b\w/g, c => c.toUpperCase()); // title‑case
+
+  /* ------------------------------------------------------------------ */
+  /* 2.  Store in MongoDB                                               */
+  /* ------------------------------------------------------------------ */
   try {
     await client
       .db("Zuppa")
       .collection("brochureRequests")
-      .insertOne({ name, organization, phone, email, submittedAt: new Date() });
+      .insertOne({
+        name,
+        organization,
+        phone,
+        email,
+        productPath,
+        productUrl,
+        productName,
+        submittedAt: new Date(),
+      });
+
+    /* ----------------------------------------------------------------
+       3.  Internal notification (to you)                              */
 
     await transporter.sendMail({
       from: process.env.EMAIL,
       to: "santhiya30032@gmail.com",
-      subject: "🛸 New AJEET Eagle Brochure Request",
+      subject: `${productUrl} Brochure Request`,
       html: `
         <h2 style="color:orange;">Brochure Request Details</h2>
+        <p><strong>Product URL:</strong> <a href="${productUrl}">${productUrl}</a></p>
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Organization:</strong> ${organization}</p>
         <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Email:</strong> ${email}</p>
-      `,
+        <p><strong>Email:</strong> ${email}</p>`,
     });
 
+    /* ----------------------------------------------------------------
+       4.  Confirmation to customer                                    */
+  
     await transporter.sendMail({
       from: process.env.EMAIL,
       to: email,
-      subject: "Thanks for Requesting the Brochure",
+      subject: `Thanks for requesting the ${productName} brochure`,
       html: `
         <h3>Dear ${name},</h3>
-        <p>Thank you for your interest in the <strong>AJEET Eagle Drone</strong>.</p>
-        <p>Our team will connect with you shortly. Meanwhile, feel free to visit <a href="https://zuppa.io">zuppa.io</a> for more info.</p>
+        <p>Thank you for your interest in the <strong>${productName}</strong>.</p>
+        <p>You can view the product here: <a href="${productUrl}">${productUrl}</a>.</p>
+        <p>Our team will connect with you shortly. Meanwhile, feel free to visit
+           <a href="https://shop.zuppa.io">zuppa.io</a> for more info.</p>
         <p>Warm regards,<br/>Team Zuppa</p>
       `,
     });
 
-    res.status(200).json({ message: "Brochure request submitted successfully" });
+    res .status(200) .json({ message: "Brochure request submitted successfully" });
   } catch (error) {
     console.error("❌ Error in /api/brochure:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
 
 
 
