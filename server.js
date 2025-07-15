@@ -172,7 +172,8 @@ app.post("/api/contact", async (req, res) => {
     /* 2.  Notify admin */
     await transporter.sendMail({
       from: process.env.EMAIL,
-      to: "askme@zuppa.io",
+      // to: "askme@zuppa.io",
+       to: "bestforevermvi@gmail.com",
       subject: "website New Contact Form Submission",
       html: `
         <h2 style="color:#ff9307">New Inquiry – ${interestedIn}</h2>
