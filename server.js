@@ -134,106 +134,84 @@ app.post("/careerform", upload.single("resume"), async (req, res) => {
 
 //------------------------------------------Website contact ---------------------------------------------------------------------------
 
+
 app.post("/api/contact", async (req, res) => {
-  const { name, email, subject, message, phone, state, district } = req.body; // Added phone to the request body
+  const {
+    name,
+    organization,
+    designation,
+    city,
+    mobile,
+    email,
+    interestedIn,
+    knowMoreAbout,
+    procurementPlan,
+    quantity,
+    demoOption,
+    location,
+  } = req.body;
 
   try {
-    const newContact = await client
-      .db("Zuppa")
-      .collection("contact")
-      .insertOne({ name, email, subject, message, phone, state, district }); // Store phone number in the database
+    /* 1.  Store in MongoDB */
+    await client.db("Zuppa").collection("contact").insertOne({
+      name,
+      organization,
+      designation,
+      city,
+      mobile,
+      email,
+      interestedIn,
+      knowMoreAbout,
+      procurementPlan,
+      quantity,
+      demoOption,
+      location,
+      createdAt: new Date(),
+    });
 
-    // Send email to admin
-    const adminMailOptions = {
+    /* 2.  Notify admin */
+    await transporter.sendMail({
       from: process.env.EMAIL,
       to: "askme@zuppa.io",
-
-      subject: "New Contact Form Submission",
+      subject: "website New Contact Form Submission",
       html: `
-      <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="color: orange; margin: 0;">Website New Contact Form Submission </h2>
-                <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
-        </div> 
+        <h2 style="color:#ff9307">New Inquiry – ${interestedIn}</h2>
+        <ul style="font-size:15px;line-height:1.5">
+          <li><strong>Name:</strong> ${name}</li>
+          <li><strong>Email:</strong> <a href="mailto:${email}">${email}</a></li>
+          <li><strong>Phone:</strong> ${mobile}</li>
+          <li><strong>Organization:</strong> ${organization}</li>
+          <li><strong>Designation:</strong> ${designation}</li>
+          <li><strong>City:</strong> ${city}</li>
+          <li><strong>Interested In:</strong> ${interestedIn}</li>
+          <li><strong>Know More About:</strong> ${knowMoreAbout}</li>
+          <li><strong>Procurement Plan:</strong> ${procurementPlan}</li>
+          <li><strong>Quantity:</strong> ${quantity}</li>
+          <li><strong>Demo Option:</strong> ${demoOption}</li>
+          <li><strong>Location:</strong> ${location}</li>
+        </ul>`,
+    });
 
-        <ul style="list-style-type: none; padding: 0;">
-                <br/>
-                <li style="display: flex; align-items: center;"> 
-                  <p>You have received a new message from <img src="00
-                  " alt="Email" style="width: 16px; margin-right: 8px;">
-                    <strong><a href="mailto:${email}">${email}</a></strong>
-                  </p>
-                </li>
-                <br/>
-                <li style="display: flex; align-items: center;"> <p><strong>Subject:</strong> ${subject}</p></li>
-                <br/>
-                <li style="display: flex; align-items: center;"><p><strong>Name:</strong> ${name}</p></li>
-                <br/>
-              <li style="display: flex; align-items: center;"> 
-              <p> <strong>Phone Number:</strong> ${phone} </p>
-              </li>
-                <br/>
-                <li style="display: flex; align-items: center;"> 
-                  <p><strong>State:</strong> ${state}</p>
-                </li>
-                <br/>
-                <li style="display: flex; align-items: center;"> 
-                  <p><strong>District:</strong> ${district}</p>
-              </li>
-                <br/>
-                <li style="display: flex; align-items: center;"> <p><strong>Message:</strong> ${message}</p></li>
-                <br/>
-        </ul>
-      </div>
-      `,
-    };
-
-    await transporter.sendMail(adminMailOptions);
-
-    // Send acknowledgment email to user from no-reply address
-    const userMailOptions = {
+    /* 3.  Acknowledgement to user */
+    await transporter.sendMail({
       from: process.env.EMAIL,
       to: email,
-      subject: "Thank You for Contacting Us",
+      subject: "Thank you for contacting Zuppa",
       html: `
-      <div style="max-width: 600px; margin: 0 auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; border-radius: 15px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="color: orange; margin: 0;">Thank You for Contacting Us</h2>
-                <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412389/t267ln5xi0a1mue0v9sn.gif" height="100px" width="110px" alt="Zuppa Logo">
-        </div>
-        <h4>Dear ${name},</h4>
-        <p>Thank you for reaching out to us.</p>
-        <p>We have received your message and will get back to you shortly.</p>
-        <ul style="list-style-type: none; padding: 0;">
-                <br/>
-                <li style="display: flex; align-items: center;">
-                  <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412385/fjurbddsghxmmuyynylt.webp" alt="Email" style="width: 16px; margin-right: 8px;">Sales Support: <strong><a href="mailto:askme@zuppa.io">askme@zuppa.io</a>  </strong>
-                </li>
-                <br/>
-                <li style="display: flex; align-items: center;">
-                  <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1724412386/t4ca5vpzjwhjol4vg0mj.png" alt="Phone" style="width: 16px; margin-right: 8px;">Phone Number: <strong><a href="tel:+91 9952081655">9952081655</a></strong>
-                </li>
-                <br/>
-        </ul>
-        <p>Best regards,</p>
-        <h3 style="color: darkorange;">Zuppa Geo Navigation</h3>
-        <p><strong>Address:</strong></p>
-        <p>Polyhose Tower No.86, West Wing</p>
-        <p>4th Floor Anna Salai, Guindy</p>
-        <p>Chennai, Tamil Nadu-600032</p> 
-      </div>
-      `,
-    };
-
-    await transporter.sendMail(userMailOptions);
-
-    res.status(201).send({
-      message: "Form submitted and acknowledgment email sent successfully",
+        <p>Hi ${name},</p>
+        <p>Thank you for contacting ZUPPA <strong>${interestedIn}</strong>.  </p>
+       <p>Our team will get in touch within 4 working hours to understand your requirements and guide you on the best-fit solution.</p>
+        <p style="margin:0">Regards,<br/>Team Zuppa Geo Navigation</p>`,
     });
-  } catch (error) {
-    res.status(400).send({ error: error.message });
+
+    res.status(201).json({ message: "Form submitted successfully." });
+  } catch (err) {
+    console.error("❌ /api/contact:", err);
+    res.status(500).json({ error: "Server error, please try again later." });
   }
 });
+/* ─────────────────────────────────────────────────────────────────────── */
+
 
 //------------------------- webpage  Drone labs contact ----------------------------------------------------------------------------------------
 
@@ -452,9 +430,16 @@ app.post("/api/verify-otp", async (req, res) => {
 //-------------------------------AndroidApp login Download API --------------------------------------------------------
 
 const genOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
+// Users who must always get the same OTP
+
 
 app.post("/api/software-download-login", async (req, res) => {
   const { email, password } = req.body;
+
+const FIXED_OTP_MAP = {
+  "softwaredeveloperzuppa@gmail.com": "4091",
+
+};
   try {
     const col = client.db("Zuppa").collection("softwareDownloads");
     const user = await col.findOne({ email });
@@ -464,9 +449,12 @@ app.post("/api/software-download-login", async (req, res) => {
     if (!ok) return res.status(400).json({ message: "Invalid Password" });
 
     /* ① Generate + hash OTP */
-    const otp = genOtp();
+const otp =
+   FIXED_OTP_MAP[email]            // 👉 special user?
+     ? FIXED_OTP_MAP[email]        // yes → fixed code
+     : genOtp();                   // others → random 4‑digit
     const otpHash = await bcrypt.hash(otp, 10);
-    const otpExpires = Date.now() + 5 * 60_000; // 5 min
+    const otpExpires = Date.now() + 5 * 60_000; // 5 min.js
 
     await col.updateOne({ _id: user._id }, { $set: { otpHash, otpExpires } });
 
@@ -613,7 +601,8 @@ app.post("/api/brochure", async (req, res) => {
       `,
     });
 
-    res .status(200) .json({ message: "Brochure request submitted successfully" });
+    res .status(200)
+ .json({ message: "Brochure request submitted successfully" });
   } catch (error) {
     console.error("❌ Error in /api/brochure:", error);
     res.status(500).json({ message: "Server error", error: error.message });
