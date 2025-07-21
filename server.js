@@ -248,13 +248,7 @@ app.post("/api/dronelabcontact", async (req, res) => {
     };
     await transporter.sendMail(adminMailOptions);
 
-    // 3. User Acknowledgment + PDF attachment
-    const pdfPath = path.join(__dirname, "public", "zuppa.pdf");
-
-    if (!fs.existsSync(pdfPath)) {
-      console.error("📄 PDF not found at:", pdfPath);
-      throw new Error("PDF file missing");
-    }
+ 
 
     const userMailOptions = {
       from: process.env.EMAIL,
@@ -264,22 +258,16 @@ app.post("/api/dronelabcontact", async (req, res) => {
         <h3>Dear ${username},</h3>
         <p>Thanks for contacting <strong>Zuppa Drone Lab</strong>.</p>
         <p>We’ve received your message and will respond shortly.</p>
-        <p><strong>Our company profile is attached below as a PDF.</strong></p>
+        <p><strong>Our company profile is downloaded successfully.</strong></p>
         <p>Warm regards,<br/>Zuppa Geo Navigation</p>`,
-      attachments: [
-        {
-          filename: "zuppa.pdf",
-          path: pdfPath,
-          contentType: "application/pdf",
-        },
-      ],
+  
     };
     await transporter.sendMail(userMailOptions);
 
     // ✅ Final response
     res
       .status(201)
-      .send({ message: "Emails sent to admin & client with PDF." });
+      .send({ message: "." });
   } catch (error) {
     console.error("Backend error:", error);
     res.status(500).send({ error: error.message });
@@ -523,38 +511,31 @@ app.post("/api/software-download-verify-otp", async (req, res) => {
 
 //------------------ Website Brochure Form Submission --------------------------
 
-// server.js  (or wherever your routes live)
+
 app.post("/api/brochure", async (req, res) => {
   const { name, organization, phone, email, page = "" } = req.body;
 
-  // ✅ Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ message: "Invalid email format" });
   }
 
-  /* ------------------------------------------------------------------ */
-  /* 1.  Build product URL and human‑friendly title                     */
-  /* ------------------------------------------------------------------ */
+
   const SHOP_BASE_URL = "https://shop.zuppa.io";
-  // page might arrive as "/ajeet_eagle" or "ajeet_eagle" – handle both
+
   const productPath = page.startsWith("/") ? page : `/${page}`;
   const productUrl  = `${SHOP_BASE_URL}${productPath}`;
 
-  // Convert "ajeet_eagle" → "Ajeet Eagle", "mini_hawk_(day)&(day&night)" → "Mini Hawk"
-  const productName = productPath
-    .split("/")               // keep last segment
+ const productName = productPath
+    .split("/")             
     .pop()
-    .replace(/\(.*\)/g, "")   // strip anything in ( )
-    .replace(/_/g, " ")       // underscores → spaces
-    .replace(/\s{2,}/g, " ")  // collapse double spaces
+    .replace(/\(.*\)/g, "") 
+    .replace(/_/g, " ")       
+    .replace(/\s{2,}/g, " ")  
     .trim()
-    .replace(/\b\w/g, c => c.toUpperCase()); // title‑case
+    .replace(/\b\w/g, c => c.toUpperCase()); 
 
-  /* ------------------------------------------------------------------ */
-  /* 2.  Store in MongoDB                                               */
-  /* ------------------------------------------------------------------ */
-  try {
+try {
     await client
       .db("Zuppa")
       .collection("brochureRequests")
@@ -574,7 +555,7 @@ app.post("/api/brochure", async (req, res) => {
 
     await transporter.sendMail({
       from: process.env.EMAIL,
-      to: "santhiya30032@gmail.com",
+      to: "askme@zuppa.io",
       subject: `${productUrl} Brochure Request`,
       html: `
         <h2 style="color:orange;">Brochure Request Details</h2>
