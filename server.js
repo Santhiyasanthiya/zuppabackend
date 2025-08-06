@@ -1,15 +1,15 @@
 import express from "express";
 import cors from "cors";
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient } from "mongodb";
 import Jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import multer from "multer";
 import nodemailer from "nodemailer";
 import "dotenv/config";
-import fs from "fs";
 import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
+
 
 const app = express();
 const PORT = process.env.PORT;
@@ -34,37 +34,55 @@ const storage = multer.diskStorage({
   },
 });
 
-
-// -------------------------- AS 128 
+// -------------------------- AS 128 --------------------------
 
 const AES_KEYS = {
   LOGIN: process.env.LOGIN_AES_KEY,
   OTP: process.env.OTP_AES_KEY,
 };
 
-// 🔐 AES Decrypt Function
-const decryptAES = (base64, key) => {
-  const raw = Buffer.from(base64, "base64");
-  const iv = raw.slice(0, 16);
-  const encrypted = raw.slice(16);
-  const decipher = crypto.createDecipheriv("aes-128-cbc", Buffer.from(key, "utf8"), iv);
-  decipher.setAutoPadding(true);
-  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-  return decrypted.toString("utf8");
+const getValidKey = (key) => {
+  const buf = Buffer.from(key, "utf8");
+  if (buf.length === 16) return buf;
+  if (buf.length < 16)
+    return Buffer.concat([buf, Buffer.alloc(16 - buf.length)], 16);
+  return buf.slice(0, 16);
 };
 
+const decryptAES = (base64, key) => {
+  try {
+    const raw = Buffer.from(base64, "base64");
+    if (raw.length <= 16) {
+      throw new Error(`Invalid encrypted data length: ${raw.length} bytes`);
+    }
+    const iv = raw.slice(0, 16);
+    const encrypted = raw.slice(16);
+    const validKey = getValidKey(key);
+    const decipher = crypto.createDecipheriv("aes-128-cbc", validKey, iv);
+    decipher.setAutoPadding(true);
+    const decrypted = Buffer.concat([
+      decipher.update(encrypted),
+      decipher.final(),
+    ]);
+    return decrypted.toString("utf8");
+  } catch (err) {
+    console.error("❌ Decrypt failed for input:", base64);
+    throw err;
+  }
+};
 
-
-
-
-
-
-
-
-
-
-
-
+const safeDecrypt = (input, key) => {
+  try {
+    if (!input || input.length < 24) {
+      console.warn("⚠️ Plain text detected, skipping decryption:", input);
+      return input;
+    }
+    return decryptAES(input, key);
+  } catch (err) {
+    console.error("❌ Decryption failed:", err);
+    throw err;
+  }
+};
 
 const upload = multer({ storage: storage });
 
@@ -72,8 +90,8 @@ const upload = multer({ storage: storage });
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL, // Your email
-    pass: process.env.EMAILPASSWORD, // Your email password or app password
+    user: process.env.EMAIL,
+    pass: process.env.EMAILPASSWORD,
   },
 });
 
@@ -166,7 +184,6 @@ app.post("/careerform", upload.single("resume"), async (req, res) => {
 
 //------------------------------------------Website contact ---------------------------------------------------------------------------
 
-
 app.post("/api/contact", async (req, res) => {
   const {
     name,
@@ -205,7 +222,7 @@ app.post("/api/contact", async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL,
       to: "askme@zuppa.io",
-     
+
       subject: "Website New Contact Form Submission",
       html: `
         <h2 style="color:#ff9307">New Inquiry – ${interestedIn}</h2>
@@ -245,7 +262,6 @@ app.post("/api/contact", async (req, res) => {
 });
 /* ─────────────────────────────────────────────────────────────────────── */
 
-
 //------------------------- webpage  Drone labs contact ----------------------------------------------------------------------------------------
 
 app.post("/api/dronelabcontact", async (req, res) => {
@@ -280,8 +296,6 @@ app.post("/api/dronelabcontact", async (req, res) => {
     };
     await transporter.sendMail(adminMailOptions);
 
- 
-
     const userMailOptions = {
       from: process.env.EMAIL,
       to: emailid,
@@ -292,14 +306,11 @@ app.post("/api/dronelabcontact", async (req, res) => {
         <p>We’ve received your message and will respond shortly.</p>
         <p><strong>Our company profile is downloaded successfully.</strong></p>
         <p>Warm regards,<br/>Zuppa Geo Navigation</p>`,
-  
     };
     await transporter.sendMail(userMailOptions);
 
     // ✅ Final response
-    res
-      .status(201)
-      .send({ message: "." });
+    res.status(201).send({ message: "." });
   } catch (error) {
     console.error("Backend error:", error);
     res.status(500).send({ error: error.message });
@@ -309,23 +320,23 @@ app.post("/api/dronelabcontact", async (req, res) => {
 //------------------------------- website disha android Software Download API --------------------------------------------------------
 
 app.post("/api/software-download", async (req, res) => {
-  const { username, emailid, phoneNumber, aadharNumber } = req.body;
-
   try {
+    const username = decryptAES(req.body.username, AES_KEYS.LOGIN);
+    const emailid = decryptAES(req.body.emailid, AES_KEYS.LOGIN);
+    const phoneNumber = decryptAES(req.body.phoneNumber, AES_KEYS.LOGIN);
+    const aadharNumber = decryptAES(req.body.aadharNumber, AES_KEYS.LOGIN);
+
     const db = client.db("Zuppa");
     const collection = db.collection("softwareDownloads");
 
-    // 1⃣  Duplicate‑email check
     const existing = await collection.findOne({ email: emailid });
     if (existing) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // 2⃣  Hash the phone as password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(phoneNumber, salt);
 
-    // 3⃣  Save user
     await collection.insertOne({
       username,
       email: emailid,
@@ -334,7 +345,6 @@ app.post("/api/software-download", async (req, res) => {
       registerDate: new Date(),
     });
 
-    // 4⃣  Prepare emails  (⟵ moved up)
     const adminMail = {
       from: process.env.EMAIL,
       to: "noreplyzuppa@gmail.com",
@@ -358,7 +368,7 @@ app.post("/api/software-download", async (req, res) => {
                width="110" height="100" alt="Zuppa Logo"/>
         </div>
         <h2 style="color:orange;">Thank You for Registering!</h2>
-        <p>Hello <strong>${username || "User"}</strong>,</p>
+        <p>Hello <strong>${username}</strong>,</p>
         <p>You can download the software here:</p>
         <p><a href="https://drive.google.com/file/d/1JVzYVPGmNM3np9-KOgF01fI4GVa974UK/view?usp=sharing" target="_blank">
              Download Software
@@ -373,7 +383,6 @@ app.post("/api/software-download", async (req, res) => {
       `,
     };
 
-    // 5⃣  Send emails once
     await transporter.sendMail(adminMail);
     await transporter.sendMail(userMail);
 
@@ -386,133 +395,96 @@ app.post("/api/software-download", async (req, res) => {
   }
 });
 
+//------------------------------- Check email availability for software download --------------------------------------------------------
+
 app.post("/api/check-email", async (req, res) => {
-  const { email } = req.body;
-  const exists = await client
-    .db("Zuppa")
-    .collection("softwareDownloads")
-    .findOne({ email });
-  res.json({ available: !exists });
+  try {
+    const email = decryptAES(req.body.email, AES_KEYS.LOGIN);
+    const exists = await client
+      .db("Zuppa")
+      .collection("softwareDownloads")
+      .findOne({ email });
+
+    res.json({ available: !exists });
+  } catch (err) {
+    console.error("Error in check-email:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 });
 
+// -------------   WEBSITE after aadhar card send otp  ---------------------------------
+
 const otpMap = new Map();
-
 app.post("/api/send-otp", async (req, res) => {
-  const { email } = req.body;
-
-  // Validate email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email))
-    return res.status(400).json({ message: "Invalid email" });
-
-  // Generate 4-digit OTP
-  const otp = Math.floor(1000 + Math.random() * 9000);
-  otpMap.set(email, otp); // store in memory
-  console.log("OTP for", email, "is", otp);
-
-  // Send email
-  const mailOptions = {
-    from: process.env.EMAIL,
-    to: email,
-    subject: "Your Zuppa OTP Code",
-    html: `<div style="font-family: Arial; padding: 20px;">
-      <h2 style="color: darkorange;">Your OTP Code</h2>
-      <p>Use the 4-digit OTP below to verify your download:</p>
-      <h1 style="letter-spacing: 5px;">${otp}</h1>
-      <p>This OTP is valid for 5 minutes.</p>
-      <p>- Team Zuppa Geo Navigation</p>
-    </div>`,
-  };
-
   try {
+    const email = decryptAES(req.body.email, AES_KEYS.OTP);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    const otp = Math.floor(1000 + Math.random() * 9000);
+    otpMap.set(email, otp);
+    console.log("OTP for", email, "is", otp);
+
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: "Your Zuppa OTP Code",
+      html: `<div style="font-family: Arial; padding: 20px;">
+        <h2 style="color: darkorange;">Your OTP Code</h2>
+        <p>Use the 4-digit OTP below to verify your download:</p>
+        <h1 style="letter-spacing: 5px;">${otp}</h1>
+        <p>This OTP is valid for 5 minutes.</p>
+        <p>- Team Zuppa Geo Navigation</p>
+      </div>`,
+    };
+
     await transporter.sendMail(mailOptions);
     res.status(200).json({ message: "OTP sent successfully to your email" });
   } catch (error) {
+    console.error("OTP Send Error:", error);
     res
       .status(500)
       .json({ message: "Failed to send OTP", error: error.message });
   }
 });
 
+//-------------------------------after aadhar card  otp verification website software  Download API verify OTP --------------------------------------------------------
 
-
-// ..................after aadhar card send otp verification........................................................
 app.post("/api/verify-otp", async (req, res) => {
-  const { email, otp } = req.body;
-  const validOtp = otpMap.get(email);
+  try {
+    const email = decryptAES(req.body.email, AES_KEYS.OTP);
+    const otp = decryptAES(req.body.otp, AES_KEYS.OTP);
+    const validOtp = otpMap.get(email);
 
-  if (parseInt(otp) === validOtp) {
-    otpMap.delete(email); // clear OTP after successful use
+    if (parseInt(otp) === validOtp) {
+      otpMap.delete(email);
+      res
+        .status(200)
+        .json({ verified: true, message: "OTP Verified Successfully" });
+    } else {
+      res.status(400).json({ verified: false, message: "Invalid OTP" });
+    }
+  } catch (err) {
+    console.error("OTP Verification Error:", err);
     res
-      .status(200)
-      .json({ verified: true, message: "OTP Verified Successfully" });
-  } else {
-    res.status(400).json({ verified: false, message: "Invalid OTP" });
+      .status(500)
+      .json({ verified: false, message: "Server Error", error: err.message });
   }
 });
 
-//-------------------------------AndroidApp login Download API --------------------------------------------------------
+//-------------------------------android gcs login Download API --------------------------------------------------------
 
 const genOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
-// Users who must always get the same OTP
-
-
-// app.post("/api/software-download-login", async (req, res) => {
-//   const { email, password } = req.body;
-
-// const FIXED_OTP_MAP = {
-//   "softwaredeveloperzuppa@gmail.com": "4091",
-
-// };
-//   try {
-//     const col = client.db("Zuppa").collection("softwareDownloads");
-//     const user = await col.findOne({ email });
-//     if (!user) return res.status(400).json({ message: "Invalid Email" });
-
-//     const ok = await bcrypt.compare(password, user.password);
-//     if (!ok) return res.status(400).json({ message: "Invalid Password" });
-
-//     /* ① Generate + hash OTP */
-// const otp =
-//    FIXED_OTP_MAP[email]            // 👉 special user?
-//      ? FIXED_OTP_MAP[email]        // yes → fixed code
-//      : genOtp();                   // others → random 4‑digit
-//     const otpHash = await bcrypt.hash(otp, 10);
-//     const otpExpires = Date.now() + 5 * 60_000; // 5 min.js
-
-//     await col.updateOne({ _id: user._id }, { $set: { otpHash, otpExpires } });
-
-//     /* ② Send e‑mail */
-//     await transporter.sendMail({
-//       from: process.env.EMAIL,
-//       to: email,
-//       subject: "Your Zuppa OTP Code",
-//       html: `
-//         <h2 style="color:#ff6f00;">Your OTP Code</h2>
-//         <p>Enter the 4‑digit code below to complete login:</p>
-//         <h1 style="letter-spacing:6px;">${otp}</h1>
-//         <p>This code expires in 5 minutes.</p>`,
-//     });
-//     console.log("✉️  OTP mailed to", email, "OTP:", otp);
-
-//     return res.status(200).json({ message: "OTP sent to your e‑mail", email });
-//   } catch (err) {
-//     console.error("Login Error:", err);
-//     res.status(500).json({ message: "Server Error", error: err.message });
-//   }
-// });
-
-
-
-
 
 app.post("/api/software-download-login", async (req, res) => {
   const FIXED_OTP_MAP = {
     "softwaredeveloperzuppa@gmail.com": "4091",
   };
   try {
-    const email = decryptAES(req.body.email, AES_KEYS.LOGIN);
-    const password = decryptAES(req.body.password, AES_KEYS.LOGIN);
+    const email = safeDecrypt(req.body.email, AES_KEYS.LOGIN);
+    const password = safeDecrypt(req.body.password, AES_KEYS.LOGIN);
 
     const col = client.db("Zuppa").collection("softwareDownloads");
     const user = await col.findOne({ email });
@@ -521,7 +493,9 @@ app.post("/api/software-download-login", async (req, res) => {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(400).json({ message: "Invalid Password" });
 
-    const otp = FIXED_OTP_MAP[email] || Math.floor(1000 + Math.random() * 9000).toString();
+    const otp =
+      FIXED_OTP_MAP[email] ||
+      Math.floor(1000 + Math.random() * 9000).toString();
     const otpHash = await bcrypt.hash(otp, 10);
     const otpExpires = Date.now() + 5 * 60_000;
 
@@ -541,66 +515,13 @@ app.post("/api/software-download-login", async (req, res) => {
 
     console.log("✉️  OTP mailed to", email, "OTP:", otp);
     return res.status(200).json({ message: "OTP sent to your e-mail", email });
-
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ message: "Server Error", error: err.message });
   }
 });
 
-
-
-/* ────────────────────────────────────────── STEP‑2  VERIFY OTP     -------------------------------                   */
-
-// app.post("/api/software-download-verify-otp", async (req, res) => {
-//   const { email, otp } = req.body;
-//   try {
-//     const col = client.db("Zuppa").collection("softwareDownloads");
-//     const user = await col.findOne({ email });
-//     if (!user) return res.status(400).json({ message: "Please login first" });
-
-//     if (!user.otpHash || Date.now() > user.otpExpires)
-//       return res.status(400).json({ message: "OTP expired" });
-
-//     const ok = await bcrypt.compare(otp, user.otpHash);
-//     if (!ok) return res.status(400).json({ message: "Invalid OTP" });
-
-//     /* ① Success → issue JWT */
-//     const token = Jwt.sign({ id: user._id }, process.env.SECRETKEY, {
-//       expiresIn: "90d",
-//     });
-
-//     /* ② Clean up + update lastLogin */
-//     await col.updateOne(
-//       { _id: user._id },
-//       {
-//         $unset: { otpHash: "", otpExpires: "" },
-//         $set: { lastLogin: new Date() },
-//       }
-//     );
-
-//     res.status(200).json({
-//       message: "Login successful",
-//       zuppa: token,
-//       _id: user._id,
-//       username: user.username,
-//     });
-//   } catch (err) {
-//     console.error("OTP Verify Error:", err);
-//     res.status(500).json({ message: "Server Error", error: err.message });
-//   }
-// });
-
-
-
-
-
-
-
-
-
-
-//------------------ Website Brochure Form Submission --------------------------
+/* ──────────────────────────────────────────android gcs STEP‑2  VERIFY OTP     -------------------------------                   */
 
 app.post("/api/software-download-verify-otp", async (req, res) => {
   try {
@@ -609,36 +530,75 @@ app.post("/api/software-download-verify-otp", async (req, res) => {
 
     const col = client.db("Zuppa").collection("softwareDownloads");
     const user = await col.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Please login first" });
 
-    if (!user.otpHash || Date.now() > user.otpExpires)
-      return res.status(400).json({ message: "OTP expired" });
+    if (!user) {
+      return res.status(400).json({ message: "Please login first" });
+    }
 
+    // Check if OTP expired
+    if (!user.otpHash || !user.otpExpires || Date.now() > user.otpExpires) {
+      await col.updateOne(
+        { _id: user._id },
+        { $unset: { otpHash: "", otpExpires: "", failedOtpAttempts: "" } }
+      );
+      return res.status(400).json({ message: "OTP expired. Please request a new one." });
+    }
+
+    // Check if user exceeded 3 attempts
+    const failedAttempts = user.failedOtpAttempts || 0;
+    if (failedAttempts >= 3) {
+      await col.updateOne(
+        { _id: user._id },
+        { $unset: { otpHash: "", otpExpires: "", failedOtpAttempts: "" } }
+      );
+      return res.status(400).json({ message: "Too many attempts. Please login again." });
+    }
+
+    // Compare OTP
     const ok = await bcrypt.compare(otp, user.otpHash);
-    if (!ok) return res.status(400).json({ message: "Invalid OTP" });
+    if (!ok) {
+      await col.updateOne(
+        { _id: user._id },
+        { $inc: { failedOtpAttempts: 1 } }
+      );
+      const remaining = 2 - failedAttempts;
+      if (remaining > 0) {
+        return res.status(400).json({ message: `Invalid OTP. You have ${remaining} attempt(s) left.` });
+      } else {
+        return res.status(400).json({ message: "Please login again." });
+      }
+    }
 
-    const token = Jwt.sign({ id: user._id }, process.env.SECRETKEY, { expiresIn: "90d" });
+    // OTP is correct
+    const token = Jwt.sign({ id: user._id }, process.env.SECRETKEY, {
+      expiresIn: "90d",
+    });
 
     await col.updateOne(
       { _id: user._id },
       {
-        $unset: { otpHash: "", otpExpires: "" },
+        $unset: { otpHash: "", otpExpires: "", failedOtpAttempts: "" },
         $set: { lastLogin: new Date() },
       }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Login successful",
       zuppa: token,
       _id: user._id,
       username: user.username,
     });
+
   } catch (err) {
     console.error("OTP Verify Error:", err);
     res.status(500).json({ message: "Server Error", error: err.message });
   }
 });
-//------------------ Brochure Form Submission --------------------------
+
+
+
+//---------------------------------- website dronelab brochure request API --------------------------
+
 app.post("/api/brochure", async (req, res) => {
   const { name, organization, phone, email, page = "" } = req.body;
 
@@ -647,35 +607,31 @@ app.post("/api/brochure", async (req, res) => {
     return res.status(400).json({ message: "Invalid email format" });
   }
 
-
   const SHOP_BASE_URL = "https://shop.zuppa.io";
 
   const productPath = page.startsWith("/") ? page : `/${page}`;
-  const productUrl  = `${SHOP_BASE_URL}${productPath}`;
+  const productUrl = `${SHOP_BASE_URL}${productPath}`;
 
- const productName = productPath
-    .split("/")             
+  const productName = productPath
+    .split("/")
     .pop()
-    .replace(/\(.*\)/g, "") 
-    .replace(/_/g, " ")       
-    .replace(/\s{2,}/g, " ")  
+    .replace(/\(.*\)/g, "")
+    .replace(/_/g, " ")
+    .replace(/\s{2,}/g, " ")
     .trim()
-    .replace(/\b\w/g, c => c.toUpperCase()); 
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
-try {
-    await client
-      .db("Zuppa")
-      .collection("brochureRequests")
-      .insertOne({
-        name,
-        organization,
-        phone,
-        email,
-        productPath,
-        productUrl,
-        productName,
-        submittedAt: new Date(),
-      });
+  try {
+    await client.db("Zuppa").collection("brochureRequests").insertOne({
+      name,
+      organization,
+      phone,
+      email,
+      productPath,
+      productUrl,
+      productName,
+      submittedAt: new Date(),
+    });
 
     /* ----------------------------------------------------------------
        3.  Internal notification (to you)                              */
@@ -695,7 +651,7 @@ try {
 
     /* ----------------------------------------------------------------
        4.  Confirmation to customer                                    */
-  
+
     await transporter.sendMail({
       from: process.env.EMAIL,
       to: email,
@@ -710,33 +666,14 @@ try {
       `,
     });
 
-    res .status(200)
- .json({ message: "Brochure request submitted successfully" });
+    res
+      .status(200)
+      .json({ message: "Brochure request submitted successfully" });
   } catch (error) {
     console.error("❌ Error in /api/brochure:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 app.listen(PORT, () => {
   console.log("Listening successfully on port", PORT);
