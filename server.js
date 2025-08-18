@@ -315,7 +315,7 @@ app.post("/demobooking", async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL,
       to: "askme@zuppa.io",
-           to:"santhiya30032@gmail.com",
+      to: "santhiya30032@gmail.com",
       subject: "New Demo Booking Request",
       html: `
         <h2 style="color:#ff9307">New Demo Booking</h2>
@@ -328,6 +328,9 @@ app.post("/demobooking", async (req, res) => {
           <li><strong>Drone Type:</strong> ${droneType}</li>
           <li><strong>Quantity:</strong> ${demoQuantity}</li>
           <li><strong>Enquiry Type:</strong> ${enquiryType}</li>
+          <li><strong>Endurance Type:</strong> ${endurance}</li>
+          <li><strong>MissionRange Type:</strong> ${missionRange}</li>
+           <li><strong>Constraints Type:</strong> ${constraints}</li>
           <li><strong>Demo at OEM:</strong> ${demoAtOEM}</li>
           <li><strong>Date:</strong> ${demoDate || "Not provided"}</li>
         </ul>`,
