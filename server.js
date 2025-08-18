@@ -260,6 +260,100 @@ app.post("/api/contact", async (req, res) => {
     res.status(500).json({ error: "Server error, please try again later." });
   }
 });
+
+
+
+
+
+
+// ---------------- WEBSITE CONTACT PAGE   DEMO BOOKING ------------------
+app.post("/demobooking", async (req, res) => {
+  const {
+    demoName,
+    demoDesignation,
+    demoCity,
+    demoMobile,
+    demoEmail,
+    endurance,
+    missionRange,
+    constraints,
+    features,
+    droneType,
+    demoQuantity,
+    enquiryType,
+    demoAtOEM,
+    demoDate,
+  } = req.body;
+
+  try {
+    // ✅ Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(demoEmail)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // 1. Save to DB
+    await client.db("Zuppa").collection("demoBookings").insertOne({
+      demoName,
+      demoDesignation,
+      demoCity,
+      demoMobile,
+      demoEmail,
+      endurance,
+      missionRange,
+      constraints,
+      features,
+      droneType,
+      demoQuantity,
+      enquiryType,
+      demoAtOEM,
+      demoDate,
+      createdAt: new Date(),
+    });
+
+    // 2. Notify admin
+    await transporter.sendMail({
+      from: process.env.EMAIL,
+      to: "askme@zuppa.io",
+           to:"santhiya30032@gmail.com",
+      subject: "New Demo Booking Request",
+      html: `
+        <h2 style="color:#ff9307">New Demo Booking</h2>
+        <ul style="font-size:15px;line-height:1.5">
+          <li><strong>Name:</strong> ${demoName}</li>
+          <li><strong>Email:</strong> ${demoEmail}</li>
+          <li><strong>Phone:</strong> ${demoMobile}</li>
+          <li><strong>Designation:</strong> ${demoDesignation}</li>
+          <li><strong>City:</strong> ${demoCity}</li>
+          <li><strong>Drone Type:</strong> ${droneType}</li>
+          <li><strong>Quantity:</strong> ${demoQuantity}</li>
+          <li><strong>Enquiry Type:</strong> ${enquiryType}</li>
+          <li><strong>Demo at OEM:</strong> ${demoAtOEM}</li>
+          <li><strong>Date:</strong> ${demoDate || "Not provided"}</li>
+        </ul>`,
+    });
+
+    // 3. Acknowledgment to user
+    await transporter.sendMail({
+      from: process.env.EMAIL,
+      to: demoEmail,
+      subject: "Thanks for booking a demo with Zuppa",
+      html: `
+        <p>Hi ${demoName},</p>
+        <p>Thanks for contacting us for a <strong>Demo Booking</strong>.</p>
+        <p>Our team will reach out to you shortly.</p>
+        <p style="margin:0">Best Regards,<br/>Team Zuppa Geo Navigation</p>
+      `,
+    });
+
+    res.status(201).json({ message: "Thanks for contacting" });
+  } catch (err) {
+    console.error("❌ /demobooking:", err);
+    res.status(500).json({ error: "Server error, please try again later." });
+  }
+});
+
+
 /* ─────────────────────────────────────────────────────────────────────── */
 
 //------------------------- webpage  Drone labs contact ----------------------------------------------------------------------------------------
@@ -530,6 +624,7 @@ app.post("/api/software-download-verify-otp", async (req, res) => {
 
     const col = client.db("Zuppa").collection("softwareDownloads");
     const user = await col.findOne({ email });
+    
 
     if (!user) {
       return res.status(400).json({ message: "Please login first" });
