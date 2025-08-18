@@ -321,16 +321,17 @@ app.post("/demobooking", async (req, res) => {
         <h2 style="color:#ff9307">New Demo Booking</h2>
         <ul style="font-size:15px;line-height:1.5">
           <li><strong>Name:</strong> ${demoName}</li>
-          <li><strong>Email:</strong> ${demoEmail}</li>
-          <li><strong>Phone:</strong> ${demoMobile}</li>
           <li><strong>Designation:</strong> ${demoDesignation}</li>
           <li><strong>City:</strong> ${demoCity}</li>
-          <li><strong>Drone Type:</strong> ${droneType}</li>
-          <li><strong>Quantity:</strong> ${demoQuantity}</li>
-          <li><strong>Enquiry Type:</strong> ${enquiryType}</li>
-          <li><strong>Endurance Type:</strong> ${endurance}</li>
+          <li><strong>Phone:</strong> ${demoMobile}</li>
+          <li><strong>Email:</strong> ${demoEmail}</li>
+          <li><strong>Expected endurance:</strong> ${endurance}</li>
           <li><strong>MissionRange Type:</strong> ${missionRange}</li>
-           <li><strong>Constraints Type:</strong> ${constraints}</li>
+          <li><strong>Do you have any size or weight constraints for the drone?:</strong> ${constraints}</li>
+         <li><strong>What specific features are you looking for in the drone?:</strong> ${features}</li>
+          <li><strong>What type/category of drone is required:</strong> ${droneType}</li>
+          <li><strong>Expected Quantity:</strong> ${demoQuantity}</li>
+          <li><strong>Is this enquiry related to an:</strong> ${enquiryType}</li>
           <li><strong>Demo at OEM:</strong> ${demoAtOEM}</li>
           <li><strong>Date:</strong> ${demoDate || "Not provided"}</li>
         </ul>`,
