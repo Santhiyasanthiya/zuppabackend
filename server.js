@@ -221,7 +221,8 @@ app.post("/api/contact", async (req, res) => {
     /* 2.  Notify admin */
     await transporter.sendMail({
       from: process.env.EMAIL,
-      to: "askme@zuppa.io",
+      // to: "askme@zuppa.io",
+           to: "santhiya30032@gmail.com",
 
       subject: "Website New Contact Form Submission",
       html: `
@@ -242,18 +243,23 @@ app.post("/api/contact", async (req, res) => {
         </ul>`,
     });
 
-    /* 3.  Acknowledgement to user */
-    await transporter.sendMail({
-      from: process.env.EMAIL,
-      to: email,
-      subject: "Thank you for contacting Zuppa",
-      html: `
-        <p>Hi ${name},</p>
-        <p>Thank you for contacting ZUPPA <strong>${interestedIn}</strong>.  </p>
-       <p>Our team will get in touch within 4 working hours to understand your requirements and guide you on the best-fit solution.</p>
-        <p style="margin:0">Regards,<br/>Team Zuppa Geo Navigation</p>`,
-    });
-
+/* 3.  Acknowledgement to user */
+await transporter.sendMail({
+  from: process.env.EMAIL,
+  to: email,
+  subject: "Thank you for contacting Zuppa",
+  html: `
+    <p>Hi ${name},</p>
+    <p>Thank you for contacting ZUPPA <strong>${interestedIn}</strong>.</p>
+    <p>Our team will get in touch within 4 working hours to understand your requirements and guide you on the best-fit solution.</p>
+    <p>You can also find us here: 
+      <a href="https://maps.google.com/?q=Chennai" target="_blank" style="color:#ff6600; text-decoration:none;">
+        📍 Chennai
+      </a>
+    </p>
+    <p style="margin:0">Regards,<br/>Team Zuppa Geo Navigation</p>
+  `,
+});
     res.status(201).json({ message: "Form submitted successfully." });
   } catch (err) {
     console.error("❌ /api/contact:", err);
@@ -314,7 +320,7 @@ app.post("/demobooking", async (req, res) => {
     // 2. Notify admin
     await transporter.sendMail({
       from: process.env.EMAIL,
-      to: "askme@zuppa.io",
+      // to: "askme@zuppa.io",
       to: "santhiya30032@gmail.com",
       subject: "New Demo Booking Request",
       html: `
@@ -337,18 +343,34 @@ app.post("/demobooking", async (req, res) => {
         </ul>`,
     });
 
-    // 3. Acknowledgment to user
-    await transporter.sendMail({
-      from: process.env.EMAIL,
-      to: demoEmail,
-      subject: "Thanks for booking a demo with Zuppa",
-      html: `
-        <p>Hi ${demoName},</p>
-        <p>Thanks for contacting us for a <strong>Demo Booking</strong>.</p>
-        <p>Our team will reach out to you shortly.</p>
-        <p style="margin:0">Best Regards,<br/>Team Zuppa Geo Navigation</p>
-      `,
-    });
+   // 3. Acknowledgment to user
+await transporter.sendMail({
+  from: process.env.EMAIL,
+  to: demoEmail,
+  subject: "Thanks for booking a demo with Zuppa",
+  html: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 15px; background-color: #fff4d9;">
+      
+      <!-- Header with Logo -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <h2 style="color: orange; margin: 0; font-size: 20px;">Thanks for Booking a Demo with Zuppa</h2>
+        <img 
+          src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" 
+          alt="Zuppa Logo" 
+          style="width:110px; height: 100px; object-fit: contain;" 
+        />
+      </div>
+
+      <!-- Body Content -->
+      <p>Hi <strong>${demoName}</strong>,</p>
+      <p>Thanks for contacting us for a <strong>Demo Booking</strong>.</p>
+      <p>Our team will reach out to you shortly.</p>
+      
+      <br/>
+      <p style="margin:0;">Best Regards,<br/><strong>Team Zuppa Geo Navigation</strong></p>
+    </div>
+  `,
+});
 
     res.status(201).json({ message: "Thanks for contacting" });
   } catch (err) {
