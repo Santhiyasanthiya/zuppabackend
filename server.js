@@ -250,15 +250,30 @@ await transporter.sendMail({
   to: email,
   subject: "Thank you for contacting Zuppa",
   html: `
-    <div style="text-align:center; padding:10px;">
-      <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" 
-           alt="Zuppa Logo" 
-           style="width:110px; height:100px; object-fit:contain;" />
+ <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 15px; background-color: #fff4d9;">
+      
+      <!-- Header with Logo -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <h2 style="color: orange; margin: 0; font-size: 20px;">Thank you for contacting ZUPPA <strong>${interestedIn}</strong>. </h2>
+        <img 
+          src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" 
+          alt="Zuppa Logo" 
+          style="width:110px; height: 100px; object-fit: contain;" 
+        />
+      </div>
+
+      <!-- Body Content -->
+      <p>Hi <strong>${name}</strong>,</p>
+      <p>Thanks for contacting us for a <strong>Demo Booking</strong>.</p>
+      <p>Our team will reach out to you shortly.</p>
+      
+      <br/>
+      <p style="margin:0;">Best Regards,<br/><strong>Team Zuppa Geo Navigation</strong></p>
     </div>
-    <p>Hi ${name},</p>
-    <p>Thank you for contacting ZUPPA <strong>${interestedIn}</strong>. </p>
-    <p>Our team will get in touch within 4 working hours to understand your requirements and guide you on the best-fit solution.</p>
-    <p style="margin:0">Regards,<br/>Team Zuppa Geo Navigation</p>
+
+
+
+
   `,
 });
 
