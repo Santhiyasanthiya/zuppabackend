@@ -244,22 +244,24 @@ app.post("/api/contact", async (req, res) => {
     });
 
 /* 3.  Acknowledgement to user */
+
 await transporter.sendMail({
   from: process.env.EMAIL,
   to: email,
   subject: "Thank you for contacting Zuppa",
   html: `
+    <div style="text-align:center; padding:10px;">
+      <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" 
+           alt="Zuppa Logo" 
+           style="width:110px; height:100px; object-fit:contain;" />
+    </div>
     <p>Hi ${name},</p>
-    <p>Thank you for contacting ZUPPA <strong>${interestedIn}</strong>.</p>
+    <p>Thank you for contacting ZUPPA <strong>${interestedIn}</strong>. </p>
     <p>Our team will get in touch within 4 working hours to understand your requirements and guide you on the best-fit solution.</p>
-    <p>You can also find us here: 
-      <a href="https://maps.google.com/?q=Chennai" target="_blank" style="color:#ff6600; text-decoration:none;">
-        📍 Chennai
-      </a>
-    </p>
     <p style="margin:0">Regards,<br/>Team Zuppa Geo Navigation</p>
   `,
 });
+
     res.status(201).json({ message: "Form submitted successfully." });
   } catch (err) {
     console.error("❌ /api/contact:", err);
