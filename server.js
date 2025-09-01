@@ -10,7 +10,6 @@ import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 
-
 const app = express();
 const PORT = process.env.PORT;
 const URL = process.env.DB;
@@ -222,7 +221,7 @@ app.post("/api/contact", async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL,
       // to: "askme@zuppa.io",
-           to: "santhiya30032@gmail.com",
+      to: "santhiya30032@gmail.com",
 
       subject: "Website New Contact Form Submission",
       html: `
@@ -243,13 +242,13 @@ app.post("/api/contact", async (req, res) => {
         </ul>`,
     });
 
-/* 3.  Acknowledgement to user */
+    /* 3.  Acknowledgement to user */
 
-await transporter.sendMail({
-  from: process.env.EMAIL,
-  to: email,
-  subject: "Thank you for contacting Zuppa",
-  html: `
+    await transporter.sendMail({
+      from: process.env.EMAIL,
+      to: email,
+      subject: "Thank you for contacting Zuppa",
+      html: `
  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 15px; background-color: #fff4d9;">
       
       <!-- Header with Logo -->
@@ -275,7 +274,7 @@ await transporter.sendMail({
 
 
   `,
-});
+    });
 
     res.status(201).json({ message: "Form submitted successfully." });
   } catch (err) {
@@ -283,11 +282,6 @@ await transporter.sendMail({
     res.status(500).json({ error: "Server error, please try again later." });
   }
 });
-
-
-
-
-
 
 // ---------------- WEBSITE CONTACT PAGE   DEMO BOOKING ------------------
 app.post("/demobooking", async (req, res) => {
@@ -360,12 +354,12 @@ app.post("/demobooking", async (req, res) => {
         </ul>`,
     });
 
-   // 3. Acknowledgment to user
-await transporter.sendMail({
-  from: process.env.EMAIL,
-  to: demoEmail,
-  subject: "Thanks for booking a demo with Zuppa",
-  html: `
+    // 3. Acknowledgment to user
+    await transporter.sendMail({
+      from: process.env.EMAIL,
+      to: demoEmail,
+      subject: "Thanks for booking a demo with Zuppa",
+      html: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 15px; background-color: #fff4d9;">
       
       <!-- Header with Logo -->
@@ -387,7 +381,7 @@ await transporter.sendMail({
       <p style="margin:0;">Best Regards,<br/><strong>Team Zuppa Geo Navigation</strong></p>
     </div>
   `,
-});
+    });
 
     res.status(201).json({ message: "Thanks for contacting" });
   } catch (err) {
@@ -395,7 +389,6 @@ await transporter.sendMail({
     res.status(500).json({ error: "Server error, please try again later." });
   }
 });
-
 
 /* ─────────────────────────────────────────────────────────────────────── */
 
@@ -610,131 +603,6 @@ app.post("/api/verify-otp", async (req, res) => {
       .json({ verified: false, message: "Server Error", error: err.message });
   }
 });
-
-//-------------------------------android gcs login Download API --------------------------------------------------------
-
-const genOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
-
-app.post("/api/software-download-login", async (req, res) => {
-  const FIXED_OTP_MAP = {
-    "softwaredeveloperzuppa@gmail.com": "4091",
-  };
-  try {
-    const email = safeDecrypt(req.body.email, AES_KEYS.LOGIN);
-    const password = safeDecrypt(req.body.password, AES_KEYS.LOGIN);
-
-    const col = client.db("Zuppa").collection("softwareDownloads");
-    const user = await col.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid Email" });
-
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.status(400).json({ message: "Invalid Password" });
-
-    const otp =
-      FIXED_OTP_MAP[email] ||
-      Math.floor(1000 + Math.random() * 9000).toString();
-    const otpHash = await bcrypt.hash(otp, 10);
-    const otpExpires = Date.now() + 5 * 60_000;
-
-    await col.updateOne({ _id: user._id }, { $set: { otpHash, otpExpires } });
-
-    await transporter.sendMail({
-      from: process.env.EMAIL,
-      to: email,
-      subject: "Your Zuppa OTP Code",
-      html: `
-        <h2 style="color:#ff6f00;">Your OTP Code</h2>
-        <p>Enter the 4-digit code below to complete login:</p>
-        <h1 style="letter-spacing:6px;">${otp}</h1>
-        <p>This code expires in 5 minutes.</p>
-      `,
-    });
-
-    console.log("✉️  OTP mailed to", email, "OTP:", otp);
-    return res.status(200).json({ message: "OTP sent to your e-mail", email });
-  } catch (err) {
-    console.error("Login Error:", err);
-    res.status(500).json({ message: "Server Error", error: err.message });
-  }
-});
-
-/* ──────────────────────────────────────────android gcs STEP‑2  VERIFY OTP     -------------------------------                   */
-
-app.post("/api/software-download-verify-otp", async (req, res) => {
-  try {
-    const email = decryptAES(req.body.email, AES_KEYS.OTP);
-    const otp = decryptAES(req.body.otp, AES_KEYS.OTP);
-
-    const col = client.db("Zuppa").collection("softwareDownloads");
-    const user = await col.findOne({ email });
-    
-
-    if (!user) {
-      return res.status(400).json({ message: "Please login first" });
-    }
-
-    // Check if OTP expired
-    if (!user.otpHash || !user.otpExpires || Date.now() > user.otpExpires) {
-      await col.updateOne(
-        { _id: user._id },
-        { $unset: { otpHash: "", otpExpires: "", failedOtpAttempts: "" } }
-      );
-      return res.status(400).json({ message: "OTP expired. Please request a new one." });
-    }
-
-    // Check if user exceeded 3 attempts
-    const failedAttempts = user.failedOtpAttempts || 0;
-    if (failedAttempts >= 3) {
-      await col.updateOne(
-        { _id: user._id },
-        { $unset: { otpHash: "", otpExpires: "", failedOtpAttempts: "" } }
-      );
-      return res.status(400).json({ message: "Too many attempts. Please login again." });
-    }
-
-    // Compare OTP
-    const ok = await bcrypt.compare(otp, user.otpHash);
-    if (!ok) {
-      await col.updateOne(
-        { _id: user._id },
-        { $inc: { failedOtpAttempts: 1 } }
-      );
-      const remaining = 2 - failedAttempts;
-      if (remaining > 0) {
-        return res.status(400).json({ message: `Invalid OTP. You have ${remaining} attempt(s) left.` });
-      } else {
-        return res.status(400).json({ message: "Please login again." });
-      }
-    }
-
-    // OTP is correct
-    const token = Jwt.sign({ id: user._id }, process.env.SECRETKEY, {
-      expiresIn: "90d",
-    });
-
-    await col.updateOne(
-      { _id: user._id },
-      {
-        $unset: { otpHash: "", otpExpires: "", failedOtpAttempts: "" },
-        $set: { lastLogin: new Date() },
-      }
-    );
-
-    return res.status(200).json({
-      message: "Login successful",
-      zuppa: token,
-      _id: user._id,
-      username: user.username,
-    });
-
-  } catch (err) {
-    console.error("OTP Verify Error:", err);
-    res.status(500).json({ message: "Server Error", error: err.message });
-  }
-});
-
-
-
 //---------------------------------- website dronelab brochure request API --------------------------
 
 app.post("/api/brochure", async (req, res) => {
@@ -812,6 +680,251 @@ app.post("/api/brochure", async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
+
+
+
+
+
+//-------------------------------android gcs login Download API --------------------------------------------------------
+
+const genOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+app.post("/api/software-download-login", async (req, res) => {
+  const FIXED_OTP_MAP = {
+    "softwaredeveloperzuppa@gmail.com": "4091",
+  };
+  try {
+    const email = safeDecrypt(req.body.email, AES_KEYS.LOGIN);
+    const password = safeDecrypt(req.body.password, AES_KEYS.LOGIN);
+
+    const col = client.db("Zuppa").collection("softwareDownloads");
+    const user = await col.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid Email" });
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) return res.status(400).json({ message: "Invalid Password" });
+
+    const otp =
+      FIXED_OTP_MAP[email] ||
+      Math.floor(1000 + Math.random() * 9000).toString();
+    const otpHash = await bcrypt.hash(otp, 10);
+    const otpExpires = Date.now() + 5 * 60_000;
+
+    await col.updateOne({ _id: user._id }, { $set: { otpHash, otpExpires } });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL,
+      to: email,
+      subject: "Your Zuppa OTP Code",
+      html: `
+        <h2 style="color:#ff6f00;">Your OTP Code</h2>
+        <p>Enter the 4-digit code below to complete login:</p>
+        <h1 style="letter-spacing:6px;">${otp}</h1>
+        <p>This code expires in 5 minutes.</p>
+      `,
+    });
+
+    console.log("✉️  OTP mailed to", email, "OTP:", otp);
+    return res.status(200).json({ message: "OTP sent to your e-mail", email });
+  } catch (err) {
+    console.error("Login Error:", err);
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+});
+
+/* ──────────────────────────────────────────android gcs STEP‑2  VERIFY OTP     -------------------------------                   */
+
+app.post("/api/software-download-verify-otp", async (req, res) => {
+  try {
+    const email = decryptAES(req.body.email, AES_KEYS.OTP);
+    const otp = decryptAES(req.body.otp, AES_KEYS.OTP);
+
+    const col = client.db("Zuppa").collection("softwareDownloads");
+    const user = await col.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: "Please login first" });
+    }
+
+    // Check if OTP expired
+    if (!user.otpHash || !user.otpExpires || Date.now() > user.otpExpires) {
+      await col.updateOne(
+        { _id: user._id },
+        { $unset: { otpHash: "", otpExpires: "", failedOtpAttempts: "" } }
+      );
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Please request a new one." });
+    }
+
+    // Check if user exceeded 3 attempts
+    const failedAttempts = user.failedOtpAttempts || 0;
+    if (failedAttempts >= 3) {
+      await col.updateOne(
+        { _id: user._id },
+        { $unset: { otpHash: "", otpExpires: "", failedOtpAttempts: "" } }
+      );
+      return res
+        .status(400)
+        .json({ message: "Too many attempts. Please login again." });
+    }
+
+    // Compare OTP
+    const ok = await bcrypt.compare(otp, user.otpHash);
+    if (!ok) {
+      await col.updateOne(
+        { _id: user._id },
+        { $inc: { failedOtpAttempts: 1 } }
+      );
+      const remaining = 2 - failedAttempts;
+      if (remaining > 0) {
+        return res
+          .status(400)
+          .json({
+            message: `Invalid OTP. You have ${remaining} attempt(s) left.`,
+          });
+      } else {
+        return res.status(400).json({ message: "Please login again." });
+      }
+    }
+
+    // OTP is correct
+    const token = Jwt.sign({ id: user._id }, process.env.SECRETKEY, {
+      expiresIn: "90d",
+    });
+
+    await col.updateOne(
+      { _id: user._id },
+      {
+        $unset: { otpHash: "", otpExpires: "", failedOtpAttempts: "" },
+        $set: { lastLogin: new Date() },
+      }
+    );
+
+    return res.status(200).json({
+      message: "Login successful",
+      zuppa: token,
+      _id: user._id,
+      username: user.username,
+    });
+  } catch (err) {
+    console.error("OTP Verify Error:", err);
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+});
+
+
+
+
+
+// --------------------- 1) Forgot Password ---------------------
+app.post("/api/software-download-forgot-password", async (req, res) => {
+  try {
+    const email = safeDecrypt(req.body.email, AES_KEYS.LOGIN);
+
+    const col = client.db("Zuppa").collection("softwareDownloads");
+    const user = await col.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Email not found" });
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenHash = await bcrypt.hash(resetToken, 10);
+    const resetExpires = Date.now() + 15 * 60_000; // valid 15 mins
+
+    // Save in DB
+    await col.updateOne(
+      { _id: user._id },
+      { $set: { resetTokenHash, resetExpires } }
+    );
+
+    // Send reset link via email
+    const resetLink = `${process.env.BASE_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(
+      email
+    )}`;
+
+    await transporter.sendMail({
+      from: process.env.EMAIL,
+      to: email,
+      subject: "Reset your Zuppa Password",
+      html: `
+        <h2 style="color:#ff6f00;">Password Reset Request</h2>
+        <p>Click the button below to reset your password:</p>
+        <a href="${resetLink}" style="background:#ff6f00;color:#fff;padding:10px 20px;text-decoration:none;border-radius:5px;">Reset Password</a>
+        <p>This link will expire in 15 minutes.</p>
+      `,
+    });
+
+    console.log("✉️  Password reset mail sent to", email);
+
+    return res.status(200).json({
+      message: "Password reset link sent to your e-mail",
+    });
+  } catch (err) {
+    console.error("Forgot Password Error:", err);
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+});
+
+// --------------------- 2) Reset Password ---------------------
+app.post("/api/software-download-reset-password", async (req, res) => {
+  try {
+    const email = safeDecrypt(req.body.email, AES_KEYS.LOGIN);
+    const token = req.body.token; // plain token from link
+    const newPassword = safeDecrypt(req.body.newPassword, AES_KEYS.LOGIN);
+
+    const col = client.db("Zuppa").collection("softwareDownloads");
+    const user = await col.findOne({ email });
+
+    if (!user || !user.resetTokenHash) {
+      return res.status(400).json({ message: "Invalid or expired reset request" });
+    }
+
+    // Check expiry
+    if (Date.now() > user.resetExpires) {
+      await col.updateOne(
+        { _id: user._id },
+        { $unset: { resetTokenHash: "", resetExpires: "" } }
+      );
+      return res.status(400).json({ message: "Reset link expired" });
+    }
+
+    // Compare token
+    const ok = await bcrypt.compare(token, user.resetTokenHash);
+    if (!ok) {
+      return res.status(400).json({ message: "Invalid reset token" });
+    }
+
+    // Update password
+    const hashPass = await bcrypt.hash(newPassword, 10);
+    await col.updateOne(
+      { _id: user._id },
+      {
+        $set: { password: hashPass },
+        $unset: { resetTokenHash: "", resetExpires: "" },
+      }
+    );
+
+    return res.status(200).json({ message: "Password has been reset successfully" });
+  } catch (err) {
+    console.error("Reset Password Error:", err);
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 app.listen(PORT, () => {
   console.log("Listening successfully on port", PORT);
