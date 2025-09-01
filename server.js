@@ -839,7 +839,7 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
     );
 
     // Send reset link via email
-    const resetLink = `${process.env.BASE_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(
+    const resetLink = `${process.env.BASE_URL}/android_reset/?token=${resetToken}&email=${encodeURIComponent(
       email
     )}`;
 
