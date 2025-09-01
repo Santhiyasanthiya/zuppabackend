@@ -838,10 +838,8 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
       { $set: { resetTokenHash, resetExpires } }
     );
 
-    // Send reset link via email
-    const resetLink = `${process.env.BASE_URL}/android_reset/${user._id}?token=${resetToken}&email=${encodeURIComponent(
-      email
-    )}`;
+  
+const resetLink = `${process.env.BASE_URL}/android_reset?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
     await transporter.sendMail({
       from: process.env.EMAIL,
