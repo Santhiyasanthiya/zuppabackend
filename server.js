@@ -686,7 +686,7 @@ app.post("/api/brochure", async (req, res) => {
 
 
 
-//-------------------------------android gcs login Download API --------------------------------------------------------
+//-------------------------------android siftware gcs login Download API --------------------------------------------------------
 
 const genOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -865,64 +865,48 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
   }
 });
 
-// --------------------- 2) Reset Password ---------------------
+
+// ---------------- RESET PASSWORD ----------------
 app.post("/api/software-download-reset-password", async (req, res) => {
   try {
-    const email = safeDecrypt(req.body.email, AES_KEYS.LOGIN);
-    const token = req.body.token; // plain token from link
-    const newPassword = safeDecrypt(req.body.newPassword, AES_KEYS.LOGIN);
+    const { email, token, newPassword } = req.body;
 
     const col = client.db("Zuppa").collection("softwareDownloads");
     const user = await col.findOne({ email });
 
-    if (!user || !user.resetTokenHash) {
-      return res.status(400).json({ message: "Invalid or expired reset request" });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid Email" });
     }
 
-    // Check expiry
-    if (Date.now() > user.resetExpires) {
-      await col.updateOne(
-        { _id: user._id },
-        { $unset: { resetTokenHash: "", resetExpires: "" } }
-      );
-      return res.status(400).json({ message: "Reset link expired" });
+    // Check if token expired
+    if (!user.resetTokenHash || !user.resetExpires || Date.now() > user.resetExpires) {
+      return res.status(400).json({ message: "Reset link expired. Please request again." });
     }
 
-    // Compare token
-    const ok = await bcrypt.compare(token, user.resetTokenHash);
-    if (!ok) {
+    // Validate token
+    const isMatch = await bcrypt.compare(token, user.resetTokenHash);
+    if (!isMatch) {
       return res.status(400).json({ message: "Invalid reset token" });
     }
 
-    // Update password
-    const hashPass = await bcrypt.hash(newPassword, 10);
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Save new password + clear reset fields
     await col.updateOne(
       { _id: user._id },
       {
-        $set: { password: hashPass },
+        $set: { password: hashedPassword },
         $unset: { resetTokenHash: "", resetExpires: "" },
       }
     );
 
-    return res.status(200).json({ message: "Password has been reset successfully" });
+    return res.status(200).json({ message: "Password reset successful" });
   } catch (err) {
     console.error("Reset Password Error:", err);
     res.status(500).json({ message: "Server Error", error: err.message });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 app.listen(PORT, () => {
