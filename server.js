@@ -220,8 +220,8 @@ app.post("/api/contact", async (req, res) => {
     /* 2.  Notify admin */
     await transporter.sendMail({
       from: process.env.EMAIL,
-      // to: "askme@zuppa.io",
-      to: "santhiya30032@gmail.com",
+      to: "askme@zuppa.io",
+      // to: "santhiya30032@gmail.com",
 
       subject: "Website New Contact Form Submission",
       html: `
@@ -331,8 +331,8 @@ app.post("/demobooking", async (req, res) => {
     // 2. Notify admin
     await transporter.sendMail({
       from: process.env.EMAIL,
-      // to: "askme@zuppa.io",
-      to: "santhiya30032@gmail.com",
+      to: "askme@zuppa.io",
+      // to: "santhiya30032@gmail.com",
       subject: "New Demo Booking Request",
       html: `
         <h2 style="color:#ff9307">New Demo Booking</h2>
@@ -681,12 +681,7 @@ app.post("/api/brochure", async (req, res) => {
   }
 });
 
-
-
-
-
-
-//-------------------------------android siftware gcs login Download API --------------------------------------------------------
+//-------------------------------android software gcs login Download API --------------------------------------------------------
 
 const genOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -779,11 +774,9 @@ app.post("/api/software-download-verify-otp", async (req, res) => {
       );
       const remaining = 2 - failedAttempts;
       if (remaining > 0) {
-        return res
-          .status(400)
-          .json({
-            message: `Invalid OTP. You have ${remaining} attempt(s) left.`,
-          });
+        return res.status(400).json({
+          message: `Invalid OTP. You have ${remaining} attempt(s) left.`,
+        });
       } else {
         return res.status(400).json({ message: "Please login again." });
       }
@@ -814,10 +807,6 @@ app.post("/api/software-download-verify-otp", async (req, res) => {
   }
 });
 
-
-
-
-
 // --------------------- 1) Forgot Password ---------------------
 app.post("/api/software-download-forgot-password", async (req, res) => {
   try {
@@ -838,19 +827,46 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
       { $set: { resetTokenHash, resetExpires } }
     );
 
-  const resetLink = `${process.env.BASE_URL}/android_reset/${resetToken}/${encodeURIComponent(email)}`;
-
-
+    const resetLink = `${
+      process.env.BASE_URL
+    }/android_reset/${resetToken}/${encodeURIComponent(email)}`;
 
     await transporter.sendMail({
       from: process.env.EMAIL,
       to: email,
       subject: "Reset your Zuppa Password",
       html: `
+
+ <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 15px; background-color: #fff4d9;">
+      
+      <!-- Header with Logo -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
         <h2 style="color:#ff6f00;">Password Reset Request</h2>
-        <p>Click the button below to reset your password:</p>
+        <img 
+          src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" 
+          alt="Zuppa Logo" 
+          style="width:110px; height: 100px; object-fit: contain;" 
+        />
+      </div>
+
+      <p>Click the button below to reset your password:</p>
         <a href="${resetLink}" style="background:#ff6f00;color:#fff;padding:10px 20px;text-decoration:none;border-radius:5px;">Reset Password</a>
         <p>This link will expire in 15 minutes.</p>
+      
+      <br/>
+      <p style="margin:0;">Best Regards,<br/><strong>Team Zuppa Geo Navigation</strong></p>
+    </div>
+
+
+
+
+
+
+
+
+
+       
+      
       `,
     });
 
@@ -865,7 +881,6 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
   }
 });
 
-
 // ---------------- RESET PASSWORD ----------------
 app.post("/api/software-download-reset-password", async (req, res) => {
   try {
@@ -879,8 +894,14 @@ app.post("/api/software-download-reset-password", async (req, res) => {
     }
 
     // Check if token expired
-    if (!user.resetTokenHash || !user.resetExpires || Date.now() > user.resetExpires) {
-      return res.status(400).json({ message: "Reset link expired. Please request again." });
+    if (
+      !user.resetTokenHash ||
+      !user.resetExpires ||
+      Date.now() > user.resetExpires
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Reset link expired. Please request again." });
     }
 
     // Validate token
@@ -907,7 +928,6 @@ app.post("/api/software-download-reset-password", async (req, res) => {
     res.status(500).json({ message: "Server Error", error: err.message });
   }
 });
-
 
 app.listen(PORT, () => {
   console.log("Listening successfully on port", PORT);
