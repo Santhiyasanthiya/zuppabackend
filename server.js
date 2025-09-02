@@ -837,37 +837,44 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
       subject: "Reset your Zuppa Password",
       html: `
 
- <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 15px; background-color: #fff4d9;">
-      
-      <!-- Header with Logo -->
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-        <h2 style="color:#ff6f00;">Password Reset Request</h2>
-        <img 
-          src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" 
-          alt="Zuppa Logo" 
-          style="width:110px; height: 90px; object-fit: contain; margin_left:50px;" 
-        />
-      </div>
+<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 550px; margin: auto; padding: 25px; border: 1px solid #f1f1f1; box-shadow: 0 12px 35px rgba(0,0,0,0.12); border-radius: 18px; background: linear-gradient(135deg, #fffaf0, #fff4d9);">
 
-      <p>Click the button below to reset your password:</p>
-      <br/>
-        <a href="${resetLink}" style="background:#ff6f00;color:#fff;padding:10px 20px;text-decoration:none;border-radius:5px;">Reset Password</a>
-        <br/>
-        <p>This link will expire in 15 minutes.</p>
-      
-      <br/>
-      <p style="margin:0;">Best Regards,<br/><strong>Team Zuppa Geo Navigation</strong></p>
-    </div>
+  <!-- Header with Logo -->
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px;">
+    <h2 style="color:#ff6f00; font-size: 22px; margin: 0; letter-spacing: 0.5px;">🔐 Password Reset</h2>
+    <img 
+      src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" 
+      alt="Zuppa Logo" 
+      style="width:100px; height:80px; object-fit:contain;" 
+    />
+  </div>
+
+  <p style="font-size:15px; color:#444; line-height:1.6; margin-bottom: 15px;">
+    We received a request to reset your password. If you didn’t make this request, you can safely ignore this email.
+  </p>
+
+  <!-- CTA Button -->
+  <div style="text-align: center; margin: 25px 0;">
+    <a href="${resetLink}" 
+       style="background: linear-gradient(135deg, #ff8c00, #ff6f00); color:#fff; padding:12px 25px; text-decoration:none; border-radius:8px; font-weight:600; font-size:15px; display:inline-block; box-shadow:0 5px 15px rgba(255,111,0,0.3); transition: all 0.3s ease;">
+       Reset Password
+    </a>
+  </div>
+
+  <p style="font-size:13px; color:#666; margin:10px 0 20px 0; text-align: center;">
+    ⏳ This link will expire in <strong>15 minutes</strong>.
+  </p>
+
+  <hr style="border:none; border-top:1px solid #f1f1f1; margin: 20px 0;" />
+
+  <!-- Footer -->
+  <p style="font-size:14px; color:#333; margin:0; text-align:center;">
+    Best Regards,<br/>
+    <strong style="color:#ff6f00;">Team Zuppa Geo Navigation</strong>
+  </p>
+</div>
 
 
-
-
-
-
-
-
-
-       
       
       `,
     });
