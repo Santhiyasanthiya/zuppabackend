@@ -837,7 +837,7 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
       subject: "Reset your Zuppa Password",
       html: `
 
- <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 15px; background-color: #fff4d9;">
+ <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 15px; background-color: #fff4d9;">
       
       <!-- Header with Logo -->
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
@@ -845,12 +845,14 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
         <img 
           src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" 
           alt="Zuppa Logo" 
-          style="width:110px; height: 100px; object-fit: contain;" 
+          style="width:110px; height: 90px; object-fit: contain; margin_left:50px;" 
         />
       </div>
 
       <p>Click the button below to reset your password:</p>
+      <br/>
         <a href="${resetLink}" style="background:#ff6f00;color:#fff;padding:10px 20px;text-decoration:none;border-radius:5px;">Reset Password</a>
+        <br/>
         <p>This link will expire in 15 minutes.</p>
       
       <br/>
