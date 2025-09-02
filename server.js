@@ -840,7 +840,7 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
 <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 560px; margin: 30px auto; padding: 28px; border: 1px solid #eee; box-shadow: 0 10px 30px rgba(0,0,0,0.12); border-radius: 18px; background: linear-gradient(135deg, #fffdf7, #fff4e3);">
 
   <!-- Header with Logo -->
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px;">
+  <div style="display: flex; justify-content: space-between; margin-bottom: 22px;">
     <h2 style="color:#ff6f00; font-size: 23px; margin: 0; letter-spacing: 0.4px; font-weight:700;">🔐 Password Reset</h2>
     <img 
       src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" 
