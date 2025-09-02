@@ -841,12 +841,13 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
 
   <!-- Header with Logo -->
   <div style="display: flex; justify-content: space-between; margin-bottom: 22px;">
-    <h2 style="color:#ff6f00; font-size: 23px; margin: 0; letter-spacing: 0.4px; font-weight:700;">🔐 Password Reset</h2>
+   
     <img 
       src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" 
       alt="Zuppa Logo" 
       style="width:95px; height:75px; object-fit:contain;" 
     />
+     <h2 style="color:#ff6f00; font-size: 23px; letter-spacing: 0.4px; font-weight:700;">🔐 Password Reset</h2>
   </div>
 
   <!-- Info Text -->
