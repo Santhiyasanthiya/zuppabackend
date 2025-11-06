@@ -535,7 +535,7 @@ app.post("/api/check-email", async (req, res) => {
       .collection("softwareDownloads")
       .findOne({ email });
 
-    res.json({ available: !exists });
+    res.json({ available: true});
   } catch (err) {
     console.error("Error in check-email:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -604,6 +604,10 @@ app.post("/api/verify-otp", async (req, res) => {
   }
 });
 //---------------------------------- website dronelab brochure request API --------------------------
+
+
+
+
 
 app.post("/api/brochure", async (req, res) => {
   const { name, organization, phone, email, page = "" } = req.body;
@@ -681,6 +685,58 @@ app.post("/api/brochure", async (req, res) => {
   }
 });
 
+
+
+// =============== brochure ================
+app.post("/brochure/api/send-otp", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: "Email required" });
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Save OTP temporarily (prefer Redis or MongoDB)
+  await client.db("Zuppa").collection("emailOtps").insertOne({
+    email,
+    otp,
+    expiresAt: Date.now() + 5 * 60 * 1000, // valid for 5 min
+  });
+
+  // Send OTP mail
+  await transporter.sendMail({
+    from: process.env.EMAIL,
+    to: email,
+    subject: "Zuppa Verification Code",
+    html: `<p>Your Zuppa verification code is <b>${otp}</b>. It’s valid for 5 minutes.</p>`,
+  });
+
+  res.json({ success: true, message: "OTP sent successfully" });
+});
+
+
+  // ---------------- brochure verify otp ----------------------------
+
+app.post("/brochure/api/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp)
+    return res.status(400).json({ success: false, message: "Email and OTP required" });
+
+  const record = await client.db("Zuppa").collection("emailOtps").findOne({ email });
+  if (!record)
+    return res.status(400).json({ success: false, message: "OTP not found" });
+
+  if (record.otp !== otp)
+    return res.status(400).json({ success: false, message: "Invalid OTP" });
+
+  if (Date.now() > record.expiresAt)
+    return res.status(400).json({ success: false, message: "OTP expired" });
+
+  await client.db("Zuppa").collection("emailOtps").deleteOne({ email }); // clear after success
+  res.json({ success: true, message: "OTP verified successfully" });
+});
+
+
+
+
 //-------------------------------android software gcs login Download API --------------------------------------------------------
 
 const genOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
@@ -712,12 +768,33 @@ app.post("/api/software-download-login", async (req, res) => {
       from: process.env.EMAIL,
       to: email,
       subject: "Your Zuppa OTP Code",
-      html: `
-        <h2 style="color:#ff6f00;">Your OTP Code</h2>
-        <p>Enter the 4-digit code below to complete login:</p>
-        <h1 style="letter-spacing:6px;">${otp}</h1>
-        <p>This code expires in 5 minutes.</p>
-      `,
+    html: `
+  <div style="max-width:500px;margin:0 auto;padding:20px;border:1px solid #e0e0e0;border-radius:8px;font-family:Arial, sans-serif;background:#ffffff;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+    
+    <!-- Logo -->
+    <div style="text-align:right;margin-bottom:15px;">
+      <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1735795527/zkvojccmuawxgh9eetf4.png" alt="Logo" style="height:50px;width:auto;" />
+    </div>
+
+    <!-- Content -->
+    <h2 style="color:#ff6f00;text-align:center;margin-bottom:10px;">Your OTP Code</h2>
+    <p style="font-size:16px;color:#333;text-align:center;margin-bottom:20px;">
+      Enter the 4-digit code below to complete login:
+    </p>
+    <h1 style="letter-spacing:8px;text-align:center;color:#222;margin:20px 0;">
+      ${otp}
+    </h1>
+    <p style="font-size:14px;color:#666;text-align:center;margin-top:20px;">
+      This code expires in <b>5 minutes</b>.
+    </p>
+
+    <!-- Footer -->
+    <p style="font-size:12px;color:#999;text-align:center;margin-top:30px;">
+      © 2025 Your Company. All rights reserved.
+    </p>
+  </div>
+`,
+
     });
 
     console.log("✉️  OTP mailed to", email, "OTP:", otp);
@@ -810,11 +887,14 @@ app.post("/api/software-download-verify-otp", async (req, res) => {
 // --------------------- 1) Forgot Password ---------------------
 app.post("/api/software-download-forgot-password", async (req, res) => {
   try {
-    const email = safeDecrypt(req.body.email, AES_KEYS.LOGIN);
+
+    const email = req.body.email; // 👈 plain email now
 
     const col = client.db("Zuppa").collection("softwareDownloads");
     const user = await col.findOne({ email });
     if (!user) return res.status(400).json({ message: "Email not found" });
+
+
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -883,13 +963,13 @@ app.post("/api/software-download-forgot-password", async (req, res) => {
       `,
     });
 
-    console.log("✉️  Password reset mail sent to", email);
+    // console.log("✉️  Password reset mail sent to", email);
 
     return res.status(200).json({
       message: "Password reset link sent to your e-mail",
     });
   } catch (err) {
-    console.error("Forgot Password Error:", err);
+    // console.error("Forgot Password Error:", err);
     res.status(500).json({ message: "Server Error", error: err.message });
   }
 });
