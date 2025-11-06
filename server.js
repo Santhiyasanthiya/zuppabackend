@@ -687,21 +687,22 @@ app.post("/api/brochure", async (req, res) => {
 
 
 
-// =============== brochure ================
+// SEND OTP
 app.post("/brochure/api/send-otp", async (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ success: false, message: "Email required" });
+  if (!email)
+    return res.status(400).json({ success: false, message: "Email required" });
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // Save OTP temporarily (prefer Redis or MongoDB)
+  await client.db("Zuppa").collection("emailOtps").deleteMany({ email });
+
   await client.db("Zuppa").collection("emailOtps").insertOne({
     email,
     otp,
-    expiresAt: Date.now() + 5 * 60 * 1000, // valid for 5 min
+    expiresAt: Date.now() + 5 * 60 * 1000,
   });
 
-  // Send OTP mail
   await transporter.sendMail({
     from: process.env.EMAIL,
     to: email,
@@ -713,14 +714,17 @@ app.post("/brochure/api/send-otp", async (req, res) => {
 });
 
 
-  // ---------------- brochure verify otp ----------------------------
-
+// VERIFY OTP
 app.post("/brochure/api/verify-otp", async (req, res) => {
   const { email, otp } = req.body;
   if (!email || !otp)
     return res.status(400).json({ success: false, message: "Email and OTP required" });
 
-  const record = await client.db("Zuppa").collection("emailOtps").findOne({ email });
+  const record = await client
+    .db("Zuppa")
+    .collection("emailOtps")
+    .findOne({ email }, { sort: { _id: -1 } }); // ✅ latest OTP only
+
   if (!record)
     return res.status(400).json({ success: false, message: "OTP not found" });
 
@@ -730,7 +734,8 @@ app.post("/brochure/api/verify-otp", async (req, res) => {
   if (Date.now() > record.expiresAt)
     return res.status(400).json({ success: false, message: "OTP expired" });
 
-  await client.db("Zuppa").collection("emailOtps").deleteOne({ email }); // clear after success
+  await client.db("Zuppa").collection("emailOtps").deleteOne({ email });
+
   res.json({ success: true, message: "OTP verified successfully" });
 });
 
