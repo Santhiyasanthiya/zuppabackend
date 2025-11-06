@@ -694,13 +694,7 @@ app.post("/api/brochure", async (req, res) => {
       <tr>
         <td style="padding: 30px 40px; text-align: left; color: #333;">
           <h3 style="color:#ff7b00; font-size:20px; margin-bottom:16px;">Dear ${name},</h3>
-          <p style="font-size:15px; line-height:1.6; margin:0 0 12px 0;">
-            Thank you for your interest in the <strong>${productName}</strong>.
-          </p>
-          <p style="font-size:15px; line-height:1.6; margin:0 0 12px 0;">
-            You can view the product here: 
-            <a href="${productUrl}" style="color:#0077cc; text-decoration:none;">${productUrl}</a>.
-          </p>
+        
           <p style="font-size:15px; line-height:1.6; margin:0 0 20px 0;">
             Our team will connect with you shortly. Meanwhile, feel free to visit 
             <a href="https://shop.zuppa.io" style="color:#0077cc; text-decoration:none;">zuppa.io</a> 
@@ -766,8 +760,82 @@ app.post("/brochure/api/send-otp", async (req, res) => {
   await transporter.sendMail({
     from: process.env.EMAIL,
     to: email,
-    subject: "Zuppa Verification Code",
-    html: `<p>Your Zuppa verification code is <b>${otp}</b>. It’s valid for 5 minutes.</p>`,
+ subject: "Zuppa Verification Code",
+html: `
+  <div style="
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f5f7fa;
+    padding: 40px 0;
+    text-align: center;
+  ">
+    <table align="center" cellpadding="0" cellspacing="0" width="600" 
+      style="
+        background-color: #ffffff;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+      ">
+      
+      <!-- Header -->
+      <tr>
+        <td style="background-color:#ffffff; padding: 25px 0; text-align: center; border-bottom: 3px solid #ff7b00;">
+          <img src="https://res.cloudinary.com/dmv2tjzo7/image/upload/v1747914984/b89pwcsfxvyar5jj2i43.jpg" 
+               alt="Zuppa Logo" 
+               style="width:180px; height:auto;" />
+        </td>
+      </tr>
+
+      <!-- OTP Body -->
+      <tr>
+        <td style="padding: 30px 40px; text-align: center; color: #333;">
+          <h2 style="color:#ff7b00; margin-bottom:20px;">Your Verification Code</h2>
+          <p style="font-size:16px; line-height:1.6; margin:0 0 20px 0;">
+            Please use the verification code below to complete your sign-in or request.
+          </p>
+
+          <div style="
+            display:inline-block;
+            background-color:#ff7b00;
+            color:#fff;
+            font-size:22px;
+            font-weight:bold;
+            letter-spacing:2px;
+            padding:14px 24px;
+            border-radius:8px;
+            margin:15px 0;
+          ">
+            ${otp}
+          </div>
+
+          <p style="font-size:15px; color:#666; margin-top:20px;">
+            This code is valid for <strong>5 minutes</strong>.<br/>
+            If you didn’t request this, please ignore this email.
+          </p>
+        </td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td style="
+          background-color:#f8f8f8;
+          border-top: 1px solid #e0e0e0;
+          padding: 16px;
+          font-size:13px;
+          color:#666;
+          text-align:center;
+        ">
+          <p style="margin:0;">&copy; ${new Date().getFullYear()} Zuppa Geo Navigation Technologies</p>
+          <p style="margin:4px 0 0 0;">
+            Visit us at 
+            <a href="https://zuppa.io" style="color:#ff7b00; text-decoration:none;">zuppa.io</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+  </div>
+`
+
   });
 
   res.json({ success: true, message: "OTP sent successfully" });
